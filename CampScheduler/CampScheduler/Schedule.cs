@@ -35,8 +35,9 @@ namespace CampScheduler
         public bool Open { get; }
         public Grade[] GradeOnly { get; }
         public Grade[] GradeStrike { get; }
+        public bool IsSpecialist { get; }
 
-        public Activity(byte id,string name, bool waterActivity, bool overflow, byte numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike)
+        public Activity(byte id,string name, bool waterActivity, bool overflow, byte numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike, bool specialist)
         {
             Id = id;
             Name = name;
@@ -46,6 +47,7 @@ namespace CampScheduler
             Open = open;
             GradeOnly = gradeOnly;
             GradeStrike = gradeStrike;
+            IsSpecialist = specialist;
         }
     }
 
@@ -57,8 +59,9 @@ namespace CampScheduler
         public byte Unit { get; }
         public bool SpecialGroup { get; }
         public byte LunchNum { get; }
+        public byte WaterGrouping { get; }
 
-        public Group(byte rowNum, string name, Grade grade, byte unit, bool specialGroup, byte lunchNum)
+        public Group(byte rowNum, string name, Grade grade, byte unit, bool specialGroup, byte lunchNum, byte waterGrouping)
         {
             RowNum = rowNum;
             Name = name;
@@ -66,6 +69,7 @@ namespace CampScheduler
             Unit = unit;
             SpecialGroup = specialGroup;
             LunchNum = lunchNum;
+            WaterGrouping = waterGrouping;
         }
     }
 
@@ -91,18 +95,21 @@ namespace CampScheduler
 
     public class Schedule
     {
-        public string[,] ScheduleData;
+        public string[,] ScheduleData; //change to internal
         internal List<Activity> Activities { get; }
 
         private Dictionary<byte, byte> LunchNumToTimeIndex;
         private SpecialActivityPrefs[] SpecActPrefs;
 
         internal Group[] Groups { get; }
-        Dictionary<Grade, byte> GradeToUnit; 
+        internal Dictionary<Grade, byte> GradeToUnit;
+        internal Dictionary<byte, List<byte>> WaterGroupingToGroups;
 
         internal string[] Times { get; }
 
-        internal Schedule(int numOfBlocks, Group[] groups, string[] times, Dictionary<byte,byte> lunchNumToTimeIndex, Dictionary<Grade,byte> gradeToUnit, SpecialActivityPrefs[] specActPrefs)
+        private Random Gen;
+
+        internal Schedule(int numOfBlocks, Group[] groups, string[] times, Dictionary<byte,byte> lunchNumToTimeIndex, Dictionary<Grade,byte> gradeToUnit, SpecialActivityPrefs[] specActPrefs, Dictionary<byte,List<byte>> waterGroupingToGroups)
         {
             ScheduleData = new string[numOfBlocks, groups.Length];
 
@@ -122,13 +129,16 @@ namespace CampScheduler
             LunchNumToTimeIndex = lunchNumToTimeIndex;
             Times = times;
             GradeToUnit = gradeToUnit;
+            WaterGroupingToGroups = waterGroupingToGroups;
 
             SpecActPrefs = specActPrefs;
+
+            Gen = new Random();
         }
 
-        public void AddActivity(string name, bool waterActivity, bool overflow, byte numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike)
+        public void AddActivity(string name, bool waterActivity, bool overflow, byte numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike, bool specialist)
         {
-            Activities.Add(new Activity((byte)Activities.Count, name, waterActivity, overflow, numOfGroups, open, gradeOnly,gradeStrike));
+            Activities.Add(new Activity((byte)Activities.Count, name, waterActivity, overflow, numOfGroups, open, gradeOnly,gradeStrike,specialist));
         }
 
         public static Grade ParseGrade(string gradeInput)
@@ -178,7 +188,8 @@ namespace CampScheduler
         public static Schedule GenerateSchedule(Excel.Range blockData, Excel.Range activityData, Excel.Range groupData)
         {
             Group[] groups = new Group[groupData.Rows.Count];
-            Dictionary<Grade,byte> GradeToUnit = new Dictionary<Grade,byte>();
+            var GradeToUnit = new Dictionary<Grade,byte>();
+            var WaterGroupingToGroups = new Dictionary<byte,byte>();
 
             for (byte i = 0; i < groups.Length; i++)
             {
@@ -187,7 +198,10 @@ namespace CampScheduler
                 var unit = groupData.Cells.Value2[i+1, 4];
                 bool specialGroup = YNParse(groupData.Cells.Value2[i+1, 2]);
                 var lunch = groupData.Cells.Value2[i+1, 5];
-                groups[i] = new Group(i, name, grade, (byte)unit , specialGroup, (byte)lunch);
+                var waterGrouping = groupData.Cells.Value2[i + 1, 6];
+                groups[i] = new Group(i, name, grade, (byte)unit , specialGroup, (byte)lunch, (byte)waterGrouping);
+
+                //deal with groupings
 
                 if (GradeToUnit.ContainsKey(grade)) continue;
                 GradeToUnit.Add(grade, (byte)unit);
@@ -229,7 +243,8 @@ namespace CampScheduler
                 var onlyGrades = ParseGrades(activityData.Cells.Value2[i + 1, 5]);
                 var strikedGrades = ParseGrades(activityData.Cells.Value2[i + 1, 6]);
                 bool open = YNParse(activityData.Cells.Value2[i + 1, 7]);
-                schedule.AddActivity(name, water, overflow, (byte)numOfGroups, open, onlyGrades, strikedGrades);
+                bool isSpecialist = YNParse(activityData.Cells.Value2[i + 1, 8]);
+                schedule.AddActivity(name, water, overflow, (byte)numOfGroups, open, onlyGrades, strikedGrades, isSpecialist);
             }
 
             schedule.GenerateSchedule();
@@ -286,17 +301,49 @@ namespace CampScheduler
         {
             for (byte block = 0; block < Times.Length; block++)
             {
+                ScheduleSpecialActivity(block, SpecActPrefs[block].OpenPref, "Open Activity");
+
                 ScheduleSpecialActivity(block, SpecActPrefs[block].OpeningCirclePref, "Opening Circle");
                 ScheduleSpecialActivity(block, SpecActPrefs[block].MiddleCirclePref, "Middle Circle");
                 ScheduleSpecialActivity(block, SpecActPrefs[block].PopsicleTimePref, "Popsicle Time");
                 ScheduleSpecialActivity(block, SpecActPrefs[block].ClosingCirclePref, "Closing Circle");
-                ScheduleSpecialActivity(block, SpecActPrefs[block].OpenPref, "Open Activity");
+
                 ScheduleSpecialActivity(block, SpecActPrefs[block].SpecialEntPrefs, "Special Entertainment");
             }
 
             foreach (Group group in Groups)
             {
                 ScheduleData[LunchNumToTimeIndex[group.LunchNum], group.RowNum] = "Lunch " + group.LunchNum;
+            }
+
+            Stack<int> lunchStack = new Stack<int>();
+            for(int i = 0; i < Activities.Count; i++)
+            {
+                if (Activities[i].IsSpecialist)
+                {
+                    lunchStack.Push(i);
+                }
+            }
+
+            Stack<int> BookableActivitiesIndexes = new Stack<int>();
+            for(byte blockIndex = 0; blockIndex < Times.Length; blockIndex++)
+            {
+                BookableActivitiesIndexes.Clear();
+
+                for(int i = 0; i < Activities.Count; i++)
+                {
+                    if (Activities[i].Overflow || Activities[i].WaterActivity) continue;
+
+                    //if (LunchNumToTimeIndex.ContainsValue(blockIndex)) continue; //do something special here
+                    BookableActivitiesIndexes.Push(i);
+                }
+                BookableActivitiesIndexes = new Stack<int>(BookableActivitiesIndexes.OrderBy(_ => Gen.Next()));
+
+                foreach (Group group in Groups)
+                {
+                    
+                    //if(Activities[BookableActivitiesIndexes.Peek()].GradeStrike.Contains(group.Grade) || !Activities[BookableActivitiesIndexes.Peek()].GradeOnly.Contains(group.Grade))
+                }
             }
         }
 
@@ -320,6 +367,9 @@ namespace CampScheduler
                     outputRange.Cells[column+3, row+2].Value2 = ScheduleData[row, column];
                 }
             }
+
+            outputRange.Columns.AutoFit();
+            outputRange.Cells.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
         }
         
     }

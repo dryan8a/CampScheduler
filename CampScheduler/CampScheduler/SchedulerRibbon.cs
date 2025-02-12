@@ -39,14 +39,13 @@ namespace CampScheduler
         {
             var inputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
             var blockData = inputSheet.Range["A2", "H8"];
-            var activityData = inputSheet.Range["J2", "P28"]; //make it look through all of the activities please thank you
-            var groupData = inputSheet.Range["R2", "V27"]; //see above
+            var activityData = inputSheet.Range["J2", "Q28"]; //make it look through all of the activities please thank you
+            var groupData = inputSheet.Range["S2", "X27"]; //see above
 
             var schedule = Schedule.GenerateSchedule(blockData, activityData,groupData);
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-
 
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(inputSheet);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
@@ -56,8 +55,6 @@ namespace CampScheduler
 
             var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
             schedule.OutputSchedule(outputSheet.Range["A1","Z100"]);
-
-            ;
         }
 
         private void OpenInputButton_Click(object sender, RibbonControlEventArgs e)

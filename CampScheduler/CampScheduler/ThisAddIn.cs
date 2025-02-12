@@ -14,7 +14,7 @@ namespace CampScheduler
     {
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
-            var workbook = Application.Workbooks.Add();
+            //var workbook = Application.Workbooks.Add();
 
             //var worksheet = workbook.Worksheets.Add();
             
