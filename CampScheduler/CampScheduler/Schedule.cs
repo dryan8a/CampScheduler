@@ -8,6 +8,7 @@ using Office = Microsoft.Office.Core;
 using Microsoft.Office.Tools.Excel;
 using Microsoft.Office.Interop.Excel;
 using System.Windows.Forms;
+using Microsoft.Office.Core;
 
 namespace CampScheduler
 {
@@ -31,13 +32,13 @@ namespace CampScheduler
         public string Name { get; }
         public bool WaterActivity { get; }
         public bool Overflow { get; }
-        public byte NumofGroups { get; }
+        public byte[] NumofGroups { get; }
         public bool Open { get; }
         public Grade[] GradeOnly { get; }
         public Grade[] GradeStrike { get; }
         public bool IsSpecialist { get; }
 
-        public Activity(byte id,string name, bool waterActivity, bool overflow, byte numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike, bool specialist)
+        public Activity(byte id,string name, bool waterActivity, bool overflow, byte[] numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike, bool specialist)
         {
             Id = id;
             Name = name;
@@ -49,6 +50,11 @@ namespace CampScheduler
             GradeStrike = gradeStrike;
             IsSpecialist = specialist;
         }
+
+        public byte GetNumOfGroups(int index)
+        {
+            return NumofGroups[index >= NumofGroups.Length ? NumofGroups.Length - 1 : index];
+        }
     }
 
     public struct Group
@@ -59,9 +65,8 @@ namespace CampScheduler
         public byte Unit { get; }
         public bool SpecialGroup { get; }
         public byte LunchNum { get; }
-        public byte WaterGrouping { get; }
 
-        public Group(byte rowNum, string name, Grade grade, byte unit, bool specialGroup, byte lunchNum, byte waterGrouping)
+        public Group(byte rowNum, string name, Grade grade, byte unit, bool specialGroup, byte lunchNum)
         {
             RowNum = rowNum;
             Name = name;
@@ -69,7 +74,6 @@ namespace CampScheduler
             Unit = unit;
             SpecialGroup = specialGroup;
             LunchNum = lunchNum;
-            WaterGrouping = waterGrouping;
         }
     }
 
@@ -97,48 +101,47 @@ namespace CampScheduler
     {
         public string[,] ScheduleData; //change to internal
         internal List<Activity> Activities { get; }
+        internal List<Activity> WaterActivities { get; }
+        int WActNumOfGroupCombos;
 
         private Dictionary<byte, byte> LunchNumToTimeIndex;
         private SpecialActivityPrefs[] SpecActPrefs;
 
         internal Group[] Groups { get; }
         internal Dictionary<Grade, byte> GradeToUnit;
-        internal Dictionary<byte, List<byte>> WaterGroupingToGroups;
 
         internal string[] Times { get; }
 
         private Random Gen;
 
-        internal Schedule(int numOfBlocks, Group[] groups, string[] times, Dictionary<byte,byte> lunchNumToTimeIndex, Dictionary<Grade,byte> gradeToUnit, SpecialActivityPrefs[] specActPrefs, Dictionary<byte,List<byte>> waterGroupingToGroups)
+        internal Schedule(int numOfBlocks, Group[] groups, string[] times, Dictionary<byte,byte> lunchNumToTimeIndex, Dictionary<Grade,byte> gradeToUnit, SpecialActivityPrefs[] specActPrefs)
         {
             ScheduleData = new string[numOfBlocks, groups.Length];
 
             Activities = new List<Activity>();
-            //AddActivity("Lunch 1", false, false, 1, false, new[] { Grade.NA }, new[] { Grade.NA });
-            //AddActivity("Lunch 2", false, false, 1, false, new[] { Grade.NA }, new[] { Grade.NA });
-            //AddActivity("Lunch 3", false, false, 1, false, new[] { Grade.NA }, new[] { Grade.NA });
-            //AddActivity("Opening Circle", false, false, 1, false, new[] { Grade.NA }, new[] { Grade.NA });
-            //AddActivity("Middle Circle", false, false, 1, false, new[] { Grade.NA }, new[] { Grade.NA });
-            //AddActivity("Closing Circle", false, false, 1, false, new[] { Grade.NA }, new[] { Grade.NA });
-            //AddActivity("Popsicle Time", false, false, 1, false, new[] { Grade.NA }, new[] { Grade.NA });
-            //AddActivity("Special Entertainment", false, false, 1, false, new[] { Grade.NA }, new[] { Grade.NA });
-            //AddActivity("Open Activity", false, false, 1, false, new[] { Grade.NA }, new[] { Grade.NA });
+            WaterActivities = new List<Activity>();
+            WActNumOfGroupCombos = 0;
 
             Groups = groups;
 
             LunchNumToTimeIndex = lunchNumToTimeIndex;
             Times = times;
             GradeToUnit = gradeToUnit;
-            WaterGroupingToGroups = waterGroupingToGroups;
 
             SpecActPrefs = specActPrefs;
 
             Gen = new Random();
         }
 
-        public void AddActivity(string name, bool waterActivity, bool overflow, byte numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike, bool specialist)
+        public void AddActivity(string name, bool waterActivity, bool overflow, byte[] numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike, bool specialist)
         {
-            Activities.Add(new Activity((byte)Activities.Count, name, waterActivity, overflow, numOfGroups, open, gradeOnly,gradeStrike,specialist));
+            Activity activity = new Activity((byte)Activities.Count, name, waterActivity, overflow, numOfGroups, open, gradeOnly, gradeStrike, specialist);
+            Activities.Add(activity); //do we need to add water activities here??
+            if (waterActivity)
+            {
+                WaterActivities.Add(activity);
+                WActNumOfGroupCombos += activity.NumofGroups.Length;
+            }
         }
 
         public static Grade ParseGrade(string gradeInput)
@@ -198,10 +201,8 @@ namespace CampScheduler
                 var unit = groupData.Cells.Value2[i+1, 4];
                 bool specialGroup = YNParse(groupData.Cells.Value2[i+1, 2]);
                 var lunch = groupData.Cells.Value2[i+1, 5];
-                var waterGrouping = groupData.Cells.Value2[i + 1, 6];
-                groups[i] = new Group(i, name, grade, (byte)unit , specialGroup, (byte)lunch, (byte)waterGrouping);
-
-                //deal with groupings
+                //var waterGrouping = groupData.Cells.Value2[i + 1, 6];
+                groups[i] = new Group(i, name, grade, (byte)unit , specialGroup, (byte)lunch);
 
                 if (GradeToUnit.ContainsKey(grade)) continue;
                 GradeToUnit.Add(grade, (byte)unit);
@@ -239,12 +240,12 @@ namespace CampScheduler
                 var name = activityData.Cells.Value2[i + 1, 1];
                 bool water = YNParse(activityData.Cells.Value2[i + 1, 2]);
                 bool overflow = YNParse(activityData.Cells.Value2[i + 1, 3]);
-                var numOfGroups = activityData.Cells.Value2[i + 1, 4];
+                string numOfGroups = Convert.ToString(activityData.Cells.Value2[i + 1, 4]);
                 var onlyGrades = ParseGrades(activityData.Cells.Value2[i + 1, 5]);
                 var strikedGrades = ParseGrades(activityData.Cells.Value2[i + 1, 6]);
                 bool open = YNParse(activityData.Cells.Value2[i + 1, 7]);
                 bool isSpecialist = YNParse(activityData.Cells.Value2[i + 1, 8]);
-                schedule.AddActivity(name, water, overflow, (byte)numOfGroups, open, onlyGrades, strikedGrades, isSpecialist);
+                schedule.AddActivity(name, water, overflow, numOfGroups.Trim(' ').Split(',').Select(n => byte.Parse(n.Trim(' '))).ToArray(), open, onlyGrades, strikedGrades, isSpecialist);
             }
 
             schedule.GenerateSchedule();
@@ -255,7 +256,6 @@ namespace CampScheduler
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
-
 
             return schedule;
         }
@@ -297,8 +297,103 @@ namespace CampScheduler
             }
         }
 
+        private bool CanScheduleWater(byte wActID, int TimeIndex, byte startGroupID, int numOfGroupsIndex)
+        {
+            int endGroupID = startGroupID + Activities[wActID].GetNumOfGroups(numOfGroupsIndex);
+            for (int groupID = startGroupID; groupID < endGroupID; groupID++)
+            {
+                if(groupID >= Groups.Count()) break;
+                if(Activities[wActID].GradeOnly.Length > 0 && !Activities[wActID].GradeOnly.Contains(Groups[groupID].Grade))
+                {
+                    return false;
+                }
+                if (Activities[wActID].GradeStrike.Length > 0 && Activities[wActID].GradeStrike.Contains(Groups[groupID].Grade))
+                {
+                    return false;
+                }  
+                if (!string.IsNullOrEmpty(ScheduleData[TimeIndex,groupID]))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private void ScheduleWaterActivities()
+        {
+            var waterActivityTimesAvailable = new List<(byte, int)>();
+            int lunchBlock = LunchNumToTimeIndex[(byte)Gen.Next(1, 4)];
+            foreach (Activity wAct in WaterActivities)
+            {
+                for (int i = 0; i < Times.Count(); i++)
+                {
+                    if (i == lunchBlock && wAct.IsSpecialist) continue;
+                    waterActivityTimesAvailable.Add((wAct.Id, i));
+                }
+            }
+            waterActivityTimesAvailable = new List<(byte, int)>(waterActivityTimesAvailable.OrderBy(_ => Gen.Next()));
+            //int availableIndex = 0;
+            int failCount = 0;
+            var ScheduledWaters = new List<(int TimeIndex, byte groupId, string ActName)>();
+            while (true)
+            {
+                ScheduledWaters.Clear();
+                bool failed = false;
+                for (byte groupID = 0, availableIndex = 0; groupID < Groups.Length; availableIndex++)
+                {
+                    if (availableIndex == waterActivityTimesAvailable.Count)
+                    {
+                        failCount++;
+                        failed = true;
+                        break;
+                    }
+
+                    int numOfGroupsIndex = (int)Math.Ceiling((float)(failCount < availableIndex ? 0 : failCount - availableIndex) / waterActivityTimesAvailable.Count());
+
+                    (byte wActID, int TimeIndex) = (0, 0);
+                    //(byte firstActID, int FirstTime) = waterActivityTimesAvailable[availableIndex];
+                    for (int i = 0; ; i++)
+                    {
+                        (wActID, TimeIndex) = waterActivityTimesAvailable[availableIndex];
+                        if (!CanScheduleWater(wActID, TimeIndex, groupID, numOfGroupsIndex))
+                        {
+                            var temp = waterActivityTimesAvailable[availableIndex];
+                            waterActivityTimesAvailable.RemoveAt(availableIndex);
+                            waterActivityTimesAvailable.Add(temp);
+                            if (i >= waterActivityTimesAvailable.Count - availableIndex - 1)
+                            {
+                                failed = true;
+                                break;
+                            }
+                            continue;
+                        }
+                        break;
+                    }
+                    if (failed)
+                    {
+                        failCount++;
+                        break;
+                    }
+
+                    for (int i = 0; i < Activities[wActID].GetNumOfGroups(numOfGroupsIndex); i++)
+                    {
+                        ScheduledWaters.Add((TimeIndex, groupID, Activities[wActID].Name));
+                        groupID++;
+                        if (groupID >= Groups.Length) break;
+                    }
+                }
+                if (failCount > WActNumOfGroupCombos) throw new Exception("Couldn't schedule water activities for all groups; try freeing up schedule");
+                if (!failed) break;
+            }
+            foreach (var scheduledWater in ScheduledWaters)
+            {
+                ScheduleData[scheduledWater.TimeIndex, scheduledWater.groupId] = scheduledWater.ActName;
+            }
+        }
+
         private void GenerateSchedule()
         {
+            //Special Activity Scheduling
             for (byte block = 0; block < Times.Length; block++)
             {
                 ScheduleSpecialActivity(block, SpecActPrefs[block].OpenPref, "Open Activity");
@@ -311,20 +406,26 @@ namespace CampScheduler
                 ScheduleSpecialActivity(block, SpecActPrefs[block].SpecialEntPrefs, "Special Entertainment");
             }
 
+            //Group Lunch Scheduling
             foreach (Group group in Groups)
             {
                 ScheduleData[LunchNumToTimeIndex[group.LunchNum], group.RowNum] = "Lunch " + group.LunchNum;
             }
 
+            //add rules generation
+
+            //Water Scheduling
+            ScheduleWaterActivities();
+            
+
             Stack<int> lunchStack = new Stack<int>();
-            for(int i = 0; i < Activities.Count; i++)
+            for (int i = 0; i < Activities.Count; i++)
             {
                 if (Activities[i].IsSpecialist)
                 {
                     lunchStack.Push(i);
                 }
             }
-
             Stack<int> BookableActivitiesIndexes = new Stack<int>();
             for(byte blockIndex = 0; blockIndex < Times.Length; blockIndex++)
             {

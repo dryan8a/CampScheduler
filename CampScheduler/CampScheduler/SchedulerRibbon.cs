@@ -42,7 +42,19 @@ namespace CampScheduler
             var activityData = inputSheet.Range["J2", "Q28"]; //make it look through all of the activities please thank you
             var groupData = inputSheet.Range["S2", "X27"]; //see above
 
-            var schedule = Schedule.GenerateSchedule(blockData, activityData,groupData);
+            Schedule schedule;
+            //error handling commented out for testing purposes
+            //try
+            {
+                schedule = Schedule.GenerateSchedule(blockData, activityData, groupData);
+            }
+            //catch (Exception ex)
+            //{
+            //    var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            //    errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
+            //    errorSheet.Range["A2"].Value2 = ex.Message;
+            //    return;
+            //}
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
