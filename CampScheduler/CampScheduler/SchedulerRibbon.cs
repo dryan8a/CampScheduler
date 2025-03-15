@@ -38,23 +38,32 @@ namespace CampScheduler
         private void GenerateOutputButton_Click(object sender, RibbonControlEventArgs e)
         {
             var inputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
-            var blockData = inputSheet.Range["A2", "H8"];
-            var activityData = inputSheet.Range["J2", "Q28"]; //make it look through all of the activities please thank you
-            var groupData = inputSheet.Range["S2", "X27"]; //see above
+
+            int blockBottom = 2;
+            while (inputSheet.Range["A" + ++blockBottom].Value2 != null) ; 
+            var blockData = inputSheet.Range["A2", "H" + (blockBottom - 1)];
+
+            int activityBottom = 2;
+            while (inputSheet.Range["J" + ++activityBottom].Value2 != null) ;
+            var activityData = inputSheet.Range["J2", "Q" + (activityBottom - 1)];
+
+            int groupBottom = 2;
+            while (inputSheet.Range["S" + ++groupBottom].Value2 != null) ;
+            var groupData = inputSheet.Range["S2", "X" + (groupBottom - 1)]; 
 
             Schedule schedule;
             //error handling commented out for testing purposes
-            //try
+            try
             {
                 schedule = Schedule.GenerateSchedule(blockData, activityData, groupData);
             }
-            //catch (Exception ex)
-            //{
-            //    var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            //    errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
-            //    errorSheet.Range["A2"].Value2 = ex.Message;
-            //    return;
-            //}
+            catch (Exception ex)
+            {
+                var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+                errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
+                errorSheet.Range["A2"].Value2 = ex.Message;
+                return;
+            }
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
