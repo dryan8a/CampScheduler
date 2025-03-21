@@ -466,6 +466,7 @@ namespace CampScheduler
             }
 
             //Group Lunch Scheduling
+            int[] LunchNumsCount = new int[LunchNumToTimeIndex.Count];
             foreach (Group group in Groups)
             {
                 byte timeIndex;
@@ -474,6 +475,8 @@ namespace CampScheduler
                     throw new Exception("Invalid Lunch Number entered in groups table; change groups table or add time to blocks table");
                 }
                 ScheduleData[timeIndex, group.RowNum] = "Lunch " + group.LunchNum;
+
+                LunchNumsCount[group.LunchNum - 1]++; //just by the by, this means that lunch num has to start at 1
             }
 
             //add rules generation
@@ -481,33 +484,81 @@ namespace CampScheduler
             //Water Scheduling
             ScheduleWaterActivities();
             
-
-            Stack<int> lunchStack = new Stack<int>();
+            //Regular Activity Scheduling
+            List<int> BookableActInds = new List<int>();
+            Dictionary<int, byte> BookableActivityToLunchNum = new Dictionary<int, byte>();
+            List<int> OverflowActInds = new List<int>();
             for (int i = 0; i < Activities.Count; i++)
             {
+                if (Activities[i].WaterActivity) continue;
+                if (Activities[i].Overflow)
+                {
+                    OverflowActInds.Add(i);
+                    continue;
+                }
+
+                BookableActInds.Add(i);
+
                 if (Activities[i].IsSpecialist)
                 {
-                    lunchStack.Push(i);
+                    //randomly choose lunch for specialist based off of lunch counts
+                    byte currentLunchNum = 1;
+                    var genNum = Gen.Next(Groups.Length);
+                    while(true)
+                    {
+                        if (genNum < LunchNumsCount[currentLunchNum - 1]) break;
+                        genNum -= LunchNumsCount[currentLunchNum - 1];
+                        currentLunchNum++;
+                    }
+
+                    BookableActivityToLunchNum.Add(i, currentLunchNum);
                 }
             }
-            Stack<int> BookableActivitiesIndexes = new Stack<int>();
-            for(byte blockIndex = 0; blockIndex < Times.Length; blockIndex++)
+
+            int currentBookableActIndInd;
+            for (byte blockIndex = 0; blockIndex < Times.Length; blockIndex++)
             {
-                BookableActivitiesIndexes.Clear();
-
-                for(int i = 0; i < Activities.Count; i++)
-                {
-                    if (Activities[i].Overflow || Activities[i].WaterActivity) continue;
-
-                    //if (LunchNumToTimeIndex.ContainsValue(blockIndex)) continue; //do something special here
-                    BookableActivitiesIndexes.Push(i);
-                }
-                BookableActivitiesIndexes = new Stack<int>(BookableActivitiesIndexes.OrderBy(_ => Gen.Next()));
+                currentBookableActIndInd = 0;
+                BookableActInds = new List<int>(BookableActInds.OrderBy(_ => Gen.Next()));
 
                 foreach (Group group in Groups)
                 {
-                    
-                    //if(Activities[BookableActivitiesIndexes.Peek()].GradeStrike.Contains(group.Grade) || !Activities[BookableActivitiesIndexes.Peek()].GradeOnly.Contains(group.Grade))
+                    if (!string.IsNullOrEmpty(ScheduleData[blockIndex, group.RowNum])) continue;
+
+                    var originalBookableInd = BookableActInds[currentBookableActIndInd];
+                    var currentAct = Activities[originalBookableInd];
+                    bool needsOverflow = false;
+                    while (true)
+                    {
+                        if ((currentAct.GradeStrike.Length != 0 && currentAct.GradeStrike.Contains(group.Grade)) ||
+                            (currentAct.GradeOnly.Length != 0 && !currentAct.GradeOnly.Contains(group.Grade)) ||
+                            (currentAct.IsSpecialist && LunchNumToTimeIndex[BookableActivityToLunchNum[BookableActInds[currentBookableActIndInd]]] == blockIndex))
+                        {
+                            var temp = BookableActInds[currentBookableActIndInd];
+                            BookableActInds.RemoveAt(currentBookableActIndInd);
+                            BookableActInds.Add(temp);
+
+                            if(originalBookableInd == BookableActInds[currentBookableActIndInd])
+                            {
+                                needsOverflow = true;
+                                break;
+                            }
+
+                            currentAct = Activities[BookableActInds[currentBookableActIndInd]];
+                            continue;
+                        }
+                        break;
+                    }
+
+                    if(needsOverflow)
+                    {
+                        ScheduleData[blockIndex, group.RowNum] = Activities[OverflowActInds[Gen.Next(OverflowActInds.Count)]].Name;
+                    }
+                    else
+                    {
+                        ScheduleData[blockIndex, group.RowNum] = currentAct.Name;
+                        currentBookableActIndInd++;
+                    }
                 }
             }
         }

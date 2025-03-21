@@ -53,17 +53,17 @@ namespace CampScheduler
 
             Schedule schedule;
             //error handling commented out for testing purposes
-            try
-            {
+            //try
+            //{
                 schedule = Schedule.GenerateSchedule(blockData, activityData, groupData);
-            }
-            catch (Exception ex)
-            {
-                var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-                errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
-                errorSheet.Range["A2"].Value2 = ex.Message;
-                return;
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            //    errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
+            //    errorSheet.Range["A2"].Value2 = ex.Message;
+            //    return;
+            //}
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
