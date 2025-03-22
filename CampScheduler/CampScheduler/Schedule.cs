@@ -103,7 +103,9 @@ namespace CampScheduler
         Success,
         GradeStriked,
         NotGradeOnly,
-        Overlapped
+        Overlapped,
+        Duplicate,
+        BookedOpen
     }
 
     public class Schedule
@@ -185,6 +187,11 @@ namespace CampScheduler
         {
             var gradeStrings = gradesInput.Split(',');
 
+            if (gradeStrings[0][0] == 'a')
+            {
+                return  new[] { Grade.PK, Grade.K, Grade.First, Grade.Second, Grade.Third, Grade.Fourth, Grade.Fifth, Grade.Sixth, Grade.MS };
+            }
+
             Grade[] grades = new Grade[gradeStrings.Length];
 
             for(int i = 0; i < grades.Length; i++)
@@ -206,7 +213,6 @@ namespace CampScheduler
 
             try
             {
-
                 for (byte i = 0; i < groups.Length; i++)
                 {
                     var name = groupData.Cells.Value2[i + 1, 1];
@@ -346,6 +352,10 @@ namespace CampScheduler
                 {
                     return ScheduleActivityReturnCode.Overlapped;
                 }
+                if (Activities[wActID].Open && SpecActPrefs[TimeIndex].OpenPref != 'n')
+                {
+                    return ScheduleActivityReturnCode.BookedOpen;
+                }
             }
             return ScheduleActivityReturnCode.Success;
         }
@@ -353,7 +363,7 @@ namespace CampScheduler
         private void ScheduleWaterActivities()
         {
             var waterActivityTimesAvailable = new List<(byte, int)>();
-            int lunchBlock = LunchNumToTimeIndex[(byte)Gen.Next(1, 4)];
+            int lunchBlock = LunchNumToTimeIndex[(byte)(Gen.Next(LunchNumToTimeIndex.Count) + 1)];
             foreach (Activity wAct in WaterActivities)
             {
                 for (int i = 0; i < Times.Count(); i++)
@@ -366,6 +376,24 @@ namespace CampScheduler
 
             int WActNumOfGroupCombos = WActMaxNumofGroups * waterActivityTimesAvailable.Count;
 
+            var UnitOpen = new [] { false, false };
+            foreach(var specActPref in SpecActPrefs)
+            {
+                switch(specActPref.OpenPref)
+                {
+                    case 'b':
+                        UnitOpen[0] = true;
+                        UnitOpen[1] = true;
+                        break;
+                    case '1':
+                        UnitOpen[0] = true;
+                        break;
+                    case '2':
+                        UnitOpen[1] = true;
+                        break;
+                }
+            }
+
             int failCount = 0;
             var ScheduledWaters = new List<(int TimeIndex, byte groupId, string ActName)>();
             while (true)
@@ -376,8 +404,12 @@ namespace CampScheduler
                 int numOfMaxGroupsIndex;
                 int minGroupsIndex = Math.DivRem(failCount, waterActivityTimesAvailable.Count(), out numOfMaxGroupsIndex);
 
-                for (byte groupID = 0, availableIndex = 0; groupID < Groups.Length; availableIndex++)
+                for (byte groupID = 0, availableIndex = 0;; availableIndex++)
                 {
+                    while (groupID < Groups.Length && UnitOpen[Groups[groupID].Unit - 1]) groupID++;
+
+                    if (groupID >= Groups.Length) break;
+
                     if (availableIndex == waterActivityTimesAvailable.Count)
                     {
                         failCount++;
@@ -450,6 +482,125 @@ namespace CampScheduler
             }
         }
 
+        private ScheduleActivityReturnCode CanScheduleRegular(byte ActID, int TimeIndex, byte startGroupID)
+        {
+            int endGroupID = startGroupID + Activities[ActID].NumofGroups[0]; //"prioritizes first num of groups"
+            for (int groupID = startGroupID; groupID < endGroupID; groupID++)
+            {
+                var Act = Activities[ActID];
+                if (groupID >= Groups.Count() || !string.IsNullOrEmpty(ScheduleData[TimeIndex, groupID]))
+                {
+                    return ScheduleActivityReturnCode.Overlapped;
+                }
+                if (Act.GradeStrike.Length > 0 && Act.GradeStrike.Contains(Groups[groupID].Grade))
+                {
+                    return ScheduleActivityReturnCode.GradeStriked;
+                }
+                if (Act.GradeOnly.Length > 0 && !Act.GradeOnly.Contains(Groups[groupID].Grade))
+                {
+                    return ScheduleActivityReturnCode.NotGradeOnly;
+                }
+                if (Act.Open && SpecActPrefs[TimeIndex].OpenPref != 'n')
+                {
+                    return ScheduleActivityReturnCode.BookedOpen;
+                }
+                for (int i = TimeIndex - 1; i >= 0; i--)
+                {
+                    if (ScheduleData[i, startGroupID] == Act.Name)
+                    {
+                        return ScheduleActivityReturnCode.Duplicate;
+                    }
+                }
+            }
+
+            return ScheduleActivityReturnCode.Success;
+        }
+        
+        private void ScheduleRegularActivities(int[] LunchNumsCount)
+        {
+            List<byte> BookableActInds = new List<byte>();
+            Dictionary<byte, byte> BookableActivityToLunchNum = new Dictionary<byte, byte>();
+            List<byte> OverflowActInds = new List<byte>();
+            for (byte i = 0; i < Activities.Count; i++)
+            {
+                if (Activities[i].WaterActivity) continue;
+                if (Activities[i].Overflow)
+                {
+                    OverflowActInds.Add(i);
+                    continue;
+                }
+
+                BookableActInds.Add(i);
+
+                if (Activities[i].IsSpecialist)
+                {
+                    //randomly choose lunch for specialist based off of lunch counts
+                    byte currentLunchNum = 1;
+                    var genNum = Gen.Next(Groups.Length);
+                    while (true)
+                    {
+                        if (genNum < LunchNumsCount[currentLunchNum - 1]) break;
+                        genNum -= LunchNumsCount[currentLunchNum - 1];
+                        currentLunchNum++;
+                    }
+
+                    BookableActivityToLunchNum.Add(i, currentLunchNum);
+                }
+            }
+
+            int currentBookableActIndInd;
+            for (byte blockIndex = 0; blockIndex < Times.Length; blockIndex++)
+            {
+                currentBookableActIndInd = 0;
+                BookableActInds = new List<byte>(BookableActInds.OrderBy(_ => Gen.Next()));
+
+                for (int GroupInd = 0; GroupInd < Groups.Length; GroupInd++)
+                {
+                    var group = Groups[GroupInd];
+                    if (!string.IsNullOrEmpty(ScheduleData[blockIndex, group.RowNum])) continue;
+
+                    var currentAct = Activities[BookableActInds[currentBookableActIndInd]];
+                    var originalBookableName = currentAct.Name;
+                    bool needsOverflow = false;
+                    ScheduleActivityReturnCode ScheduleCode;
+                    while (true)
+                    {
+                        ScheduleCode = CanScheduleRegular(BookableActInds[currentBookableActIndInd], blockIndex, group.RowNum);
+                        if ((currentAct.IsSpecialist && LunchNumToTimeIndex[BookableActivityToLunchNum[BookableActInds[currentBookableActIndInd]]] == blockIndex)
+                            || ScheduleCode != ScheduleActivityReturnCode.Success)
+                        {
+                            var temp = BookableActInds[currentBookableActIndInd];
+                            BookableActInds.RemoveAt(currentBookableActIndInd);
+                            BookableActInds.Add(temp);
+
+                            if (originalBookableName == Activities[BookableActInds[currentBookableActIndInd]].Name)
+                            {
+                                needsOverflow = true;
+                                break;
+                            }
+
+                            currentAct = Activities[BookableActInds[currentBookableActIndInd]];
+                            continue;
+                        }
+                        break;
+                    }
+
+                    if (needsOverflow)
+                    {
+                        ScheduleData[blockIndex, group.RowNum] = Activities[OverflowActInds[Gen.Next(OverflowActInds.Count)]].Name;
+                    }
+                    else
+                    {
+                        for (int i = 0; i < currentAct.NumofGroups[0]; i++)
+                        {
+                            ScheduleData[blockIndex, group.RowNum + i] = currentAct.Name;
+                        }
+                        currentBookableActIndInd += currentAct.NumofGroups[0];
+                    }
+                }
+            }
+        }
+
         private void GenerateSchedule()
         {
             //Special Activity Scheduling
@@ -483,84 +634,9 @@ namespace CampScheduler
 
             //Water Scheduling
             ScheduleWaterActivities();
-            
+
             //Regular Activity Scheduling
-            List<int> BookableActInds = new List<int>();
-            Dictionary<int, byte> BookableActivityToLunchNum = new Dictionary<int, byte>();
-            List<int> OverflowActInds = new List<int>();
-            for (int i = 0; i < Activities.Count; i++)
-            {
-                if (Activities[i].WaterActivity) continue;
-                if (Activities[i].Overflow)
-                {
-                    OverflowActInds.Add(i);
-                    continue;
-                }
-
-                BookableActInds.Add(i);
-
-                if (Activities[i].IsSpecialist)
-                {
-                    //randomly choose lunch for specialist based off of lunch counts
-                    byte currentLunchNum = 1;
-                    var genNum = Gen.Next(Groups.Length);
-                    while(true)
-                    {
-                        if (genNum < LunchNumsCount[currentLunchNum - 1]) break;
-                        genNum -= LunchNumsCount[currentLunchNum - 1];
-                        currentLunchNum++;
-                    }
-
-                    BookableActivityToLunchNum.Add(i, currentLunchNum);
-                }
-            }
-
-            int currentBookableActIndInd;
-            for (byte blockIndex = 0; blockIndex < Times.Length; blockIndex++)
-            {
-                currentBookableActIndInd = 0;
-                BookableActInds = new List<int>(BookableActInds.OrderBy(_ => Gen.Next()));
-
-                foreach (Group group in Groups)
-                {
-                    if (!string.IsNullOrEmpty(ScheduleData[blockIndex, group.RowNum])) continue;
-
-                    var originalBookableInd = BookableActInds[currentBookableActIndInd];
-                    var currentAct = Activities[originalBookableInd];
-                    bool needsOverflow = false;
-                    while (true)
-                    {
-                        if ((currentAct.GradeStrike.Length != 0 && currentAct.GradeStrike.Contains(group.Grade)) ||
-                            (currentAct.GradeOnly.Length != 0 && !currentAct.GradeOnly.Contains(group.Grade)) ||
-                            (currentAct.IsSpecialist && LunchNumToTimeIndex[BookableActivityToLunchNum[BookableActInds[currentBookableActIndInd]]] == blockIndex))
-                        {
-                            var temp = BookableActInds[currentBookableActIndInd];
-                            BookableActInds.RemoveAt(currentBookableActIndInd);
-                            BookableActInds.Add(temp);
-
-                            if(originalBookableInd == BookableActInds[currentBookableActIndInd])
-                            {
-                                needsOverflow = true;
-                                break;
-                            }
-
-                            currentAct = Activities[BookableActInds[currentBookableActIndInd]];
-                            continue;
-                        }
-                        break;
-                    }
-
-                    if(needsOverflow)
-                    {
-                        ScheduleData[blockIndex, group.RowNum] = Activities[OverflowActInds[Gen.Next(OverflowActInds.Count)]].Name;
-                    }
-                    else
-                    {
-                        ScheduleData[blockIndex, group.RowNum] = currentAct.Name;
-                        currentBookableActIndInd++;
-                    }
-                }
-            }
+            ScheduleRegularActivities(LunchNumsCount);
         }
 
         public void OutputSchedule(Excel.Range outputRange)
