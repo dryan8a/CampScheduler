@@ -39,17 +39,21 @@ namespace CampScheduler
         {
             var inputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
 
-            int blockBottom = 2;
+            int blockBottom = 3;
             while (inputSheet.Range["A" + ++blockBottom].Value2 != null) ; 
-            var blockData = inputSheet.Range["A2", "H" + (blockBottom - 1)];
+            var blockData = inputSheet.Range["A3", "H" + (blockBottom - 1)];
 
-            int activityBottom = 2;
+            int activityBottom = 3;
             while (inputSheet.Range["J" + ++activityBottom].Value2 != null) ;
-            var activityData = inputSheet.Range["J2", "Q" + (activityBottom - 1)];
+            var activityData = inputSheet.Range["J3", "Q" + (activityBottom - 1)];
 
-            int groupBottom = 2;
+            int groupBottom = 3;
             while (inputSheet.Range["S" + ++groupBottom].Value2 != null) ;
-            var groupData = inputSheet.Range["S2", "X" + (groupBottom - 1)]; 
+            var groupData = inputSheet.Range["S3", "X" + (groupBottom - 1)];
+
+            int rulesBottom = 3;
+            while (inputSheet.Range["Y" + ++rulesBottom].Value2 != null) ;
+            var rulesData = inputSheet.Range["Y3", "AA" + (rulesBottom - 1)];
 
             Schedule schedule;
             //error handling commented out for testing purposes

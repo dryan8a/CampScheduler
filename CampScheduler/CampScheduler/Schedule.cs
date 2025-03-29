@@ -105,7 +105,8 @@ namespace CampScheduler
         NotGradeOnly,
         Overlapped,
         Duplicate,
-        BookedOpen
+        BookedOpen,
+        SpecialGroup
     }
 
     public class Schedule
@@ -492,6 +493,10 @@ namespace CampScheduler
                 {
                     return ScheduleActivityReturnCode.Overlapped;
                 }
+                if (Groups[groupID].SpecialGroup)
+                {
+                    return ScheduleActivityReturnCode.SpecialGroup;
+                }
                 if (Act.GradeStrike.Length > 0 && Act.GradeStrike.Contains(Groups[groupID].Grade))
                 {
                     return ScheduleActivityReturnCode.GradeStriked;
@@ -557,6 +562,7 @@ namespace CampScheduler
                 for (int GroupInd = 0; GroupInd < Groups.Length; GroupInd++)
                 {
                     var group = Groups[GroupInd];
+                    if (group.SpecialGroup) continue;
                     if (!string.IsNullOrEmpty(ScheduleData[blockIndex, group.RowNum])) continue;
 
                     var currentAct = Activities[BookableActInds[currentBookableActIndInd]];
@@ -585,7 +591,11 @@ namespace CampScheduler
                         break;
                     }
 
-                    if (needsOverflow)
+                    if(ScheduleCode == ScheduleActivityReturnCode.SpecialGroup)
+                    {
+                        continue;
+                    }
+                    else if (needsOverflow)
                     {
                         ScheduleData[blockIndex, group.RowNum] = Activities[OverflowActInds[Gen.Next(OverflowActInds.Count)]].Name;
                     }
