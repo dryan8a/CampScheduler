@@ -10,6 +10,8 @@ using Microsoft.Office.Interop.Excel;
 using System.Windows.Forms;
 using Microsoft.Office.Core;
 using System.Linq.Expressions;
+using System.Security;
+using System.Xml;
 
 namespace CampScheduler
 {
@@ -98,8 +100,23 @@ namespace CampScheduler
         }
     }
 
+    public struct Rule
+    {
+        public byte[] GroupIDs;
+        public byte[] ActIDs;
+        public byte[] TimeIDs;
+
+        public Rule(byte[] groupIDs, byte[] actIDs, byte[] timeIDs)
+        {
+            GroupIDs = groupIDs;
+            ActIDs = actIDs;
+            TimeIDs = timeIDs;
+        }
+    }
+
     public enum ScheduleActivityReturnCode
     {
+        NotReturned,
         Success,
         GradeStriked,
         NotGradeOnly,
@@ -121,6 +138,8 @@ namespace CampScheduler
 
         internal Group[] Groups { get; }
         internal Dictionary<Grade, byte> GradeToUnit;
+
+        internal List<Rule> Rules { get; }
 
         internal string[] Times { get; }
 
@@ -144,6 +163,8 @@ namespace CampScheduler
             SpecActPrefs = specActPrefs;
 
             Gen = new Random();
+
+            Rules = new List<Rule>();
         }
 
         public void AddActivity(string name, bool waterActivity, bool overflow, byte[] numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike, bool specialist)
@@ -155,6 +176,11 @@ namespace CampScheduler
                 WaterActivities.Add(activity);
                 if (activity.NumofGroups.Length > WActMaxNumofGroups) WActMaxNumofGroups = activity.NumofGroups.Length;               
             }
+        }
+
+        public void AddRule(byte[] groupIDs, byte[] actIDs, byte[] timeIDs)
+        {
+            Rules.Add(new Rule(groupIDs, actIDs, timeIDs));
         }
 
         public static Grade ParseGrade(string gradeInput)
@@ -204,9 +230,56 @@ namespace CampScheduler
             return grades;
         }
 
+        public byte[] ParseActivities(string activityNamesInput)
+        {
+            var activityStrings = activityNamesInput.Split(',');
+            byte[] activityIds = new byte[activityStrings.Length];
+            for(int i = 0; i <  activityStrings.Length; i++)
+            {
+                activityIds[i] = Activities.First(act => act.Name.Equals(activityStrings[i].Trim())).Id;
+            }
+            return activityIds;
+        }
+        public byte[] ParseTimes(string timesInput)
+        {
+            var timesStrings = timesInput.Split(',');
+            byte[] activityIds = new byte[timesStrings.Length];
+            for (int i = 0; i < timesStrings.Length; i++)
+            {
+                activityIds[i] = (byte)Array.IndexOf(Times,timesStrings[i].Trim());
+                if (activityIds[i] == 255) throw new Exception();
+            }
+            return activityIds;
+        }
+
+        public byte[] ParseGroupOrGrade(string groupOrGradeInput)
+        {
+            var groupOrGradeStrings = groupOrGradeInput.Split(',');
+            List<byte> groupIds = new List<byte>();
+            foreach(string groupOrGradeString in groupOrGradeStrings)
+            {
+                string groupOrGradeStringTrim = groupOrGradeString.Trim();
+
+                Grade grade = ParseGrade(groupOrGradeStringTrim);
+                if(grade == Grade.NA)
+                {
+                    byte groupID = (byte)Array.FindIndex(Groups, x => x.Name == groupOrGradeStringTrim);
+                    if (groupID == 255) throw new Exception();
+                    groupIds.Add(groupID);
+                    continue;
+                }
+
+                for(byte i = 0; i < Groups.Length;i++) 
+                {
+                    if (Groups[i].Grade == grade && !groupIds.Contains(i)) groupIds.Add(i);
+                }
+            }
+            return groupIds.ToArray();
+        }
+
         public static bool YNParse(string ynInput) => ynInput == "y";
 
-        public static Schedule GenerateSchedule(Excel.Range blockData, Excel.Range activityData, Excel.Range groupData)
+        public static Schedule GenerateSchedule(Excel.Range blockData, Excel.Range activityData, Excel.Range groupData, Excel.Range rulesData)
         {
             Group[] groups = new Group[groupData.Rows.Count];
             var GradeToUnit = new Dictionary<Grade,byte>();
@@ -285,6 +358,21 @@ namespace CampScheduler
                 throw new Exception("Failed to parse activities table; check for empty or invalid inputs");
             }
 
+            try
+            {
+                for (byte i = 0; i < rulesData.Rows.Count; i++)
+                {
+                    var groupIDs = schedule.ParseGroupOrGrade(rulesData.Cells.Value2[i + 1, 1]);
+                    var actIds = schedule.ParseActivities(rulesData.Cells.Value2[i + 1, 2]);
+                    var timeIndeces = schedule.ParseTimes(rulesData.Cells.Value2[i + 1, 3]);
+                    schedule.AddRule(groupIDs,actIds, timeIndeces);
+                }
+            }
+            catch(Exception ex)
+            {
+                throw new Exception("Failed to parse rules table; check for empty or invalid inputs");
+            }
+
 
             schedule.GenerateSchedule();
 
@@ -333,6 +421,16 @@ namespace CampScheduler
                     ScheduleData[blockNum,group.RowNum] = ActivityName;
                 }
             }
+        }
+
+        private bool isBookedInBlock(byte ActID, int TimeIndex)
+        {
+            for (int i = 0; i < Groups.Length; i++)
+            {
+                if (ScheduleData[TimeIndex, i] == Activities[ActID].Name) return true;
+            }
+
+            return false;
         }
 
         private ScheduleActivityReturnCode CanScheduleWater(byte wActID, int TimeIndex, byte startGroupID, int numOfGroupsIndex)
@@ -509,23 +607,24 @@ namespace CampScheduler
                 {
                     return ScheduleActivityReturnCode.BookedOpen;
                 }
-                for (int i = TimeIndex - 1; i >= 0; i--)
+                for (int i = 0; i < Times.Length; i++)
                 {
                     if (ScheduleData[i, startGroupID] == Act.Name)
                     {
                         return ScheduleActivityReturnCode.Duplicate;
                     }
                 }
+                if (isBookedInBlock(ActID, TimeIndex)) return ScheduleActivityReturnCode.Duplicate;
             }
 
             return ScheduleActivityReturnCode.Success;
         }
-        
         private void ScheduleRegularActivities(int[] LunchNumsCount)
         {
             List<byte> BookableActInds = new List<byte>();
             Dictionary<byte, byte> BookableActivityToLunchNum = new Dictionary<byte, byte>();
             List<byte> OverflowActInds = new List<byte>();
+
             for (byte i = 0; i < Activities.Count; i++)
             {
                 if (Activities[i].WaterActivity) continue;
@@ -548,6 +647,10 @@ namespace CampScheduler
                         genNum -= LunchNumsCount[currentLunchNum - 1];
                         currentLunchNum++;
                     }
+                    if (isBookedInBlock(i, LunchNumToTimeIndex[currentLunchNum]))
+                    {
+                        currentLunchNum = (byte)((currentLunchNum + 1) % LunchNumToTimeIndex.Count);
+                    }
 
                     BookableActivityToLunchNum.Add(i, currentLunchNum);
                 }
@@ -562,14 +665,19 @@ namespace CampScheduler
                 for (int GroupInd = 0; GroupInd < Groups.Length; GroupInd++)
                 {
                     var group = Groups[GroupInd];
+
                     if (group.SpecialGroup) continue;
                     if (!string.IsNullOrEmpty(ScheduleData[blockIndex, group.RowNum])) continue;
 
-                    var currentAct = Activities[BookableActInds[currentBookableActIndInd]];
-                    var originalBookableName = currentAct.Name;
                     bool needsOverflow = false;
-                    ScheduleActivityReturnCode ScheduleCode;
-                    while (true)
+                    if(currentBookableActIndInd >= BookableActInds.Count)
+                    {
+                        needsOverflow = true;
+                    }
+                    var currentAct = Activities[BookableActInds[currentBookableActIndInd >= BookableActInds.Count ? 0 : currentBookableActIndInd]];
+                    var originalBookableName = currentAct.Name;
+                    ScheduleActivityReturnCode ScheduleCode = ScheduleActivityReturnCode.NotReturned;
+                    while (!needsOverflow)
                     {
                         ScheduleCode = CanScheduleRegular(BookableActInds[currentBookableActIndInd], blockIndex, group.RowNum);
                         if ((currentAct.IsSpecialist && LunchNumToTimeIndex[BookableActivityToLunchNum[BookableActInds[currentBookableActIndInd]]] == blockIndex)
@@ -597,6 +705,7 @@ namespace CampScheduler
                     }
                     else if (needsOverflow)
                     {
+                        if (OverflowActInds.Count == 0) throw new Exception("Couldn't schedule all activities; please add an overflow activity");
                         ScheduleData[blockIndex, group.RowNum] = Activities[OverflowActInds[Gen.Next(OverflowActInds.Count)]].Name;
                     }
                     else
@@ -640,10 +749,20 @@ namespace CampScheduler
                 LunchNumsCount[group.LunchNum - 1]++; //just by the by, this means that lunch num has to start at 1
             }
 
-            //add rules generation
+            //Rules Scheduling
+            foreach(Rule rule in Rules)
+            {
+                var actID = rule.ActIDs[Gen.Next(rule.ActIDs.Length)];
+                var timeIndex = rule.TimeIDs[Gen.Next(rule.TimeIDs.Length)];
+
+                foreach (var groupID in rule.GroupIDs)
+                {
+                    ScheduleData[timeIndex, groupID] = Activities[actID].Name;
+                }
+            }
 
             //Water Scheduling
-            ScheduleWaterActivities();
+            //ScheduleWaterActivities();
 
             //Regular Activity Scheduling
             ScheduleRegularActivities(LunchNumsCount);

@@ -59,7 +59,7 @@ namespace CampScheduler
             //error handling commented out for testing purposes
             //try
             //{
-                schedule = Schedule.GenerateSchedule(blockData, activityData, groupData);
+                schedule = Schedule.GenerateSchedule(blockData, activityData, groupData, rulesData);
             //}
             //catch (Exception ex)
             //{
