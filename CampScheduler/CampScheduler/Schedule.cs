@@ -609,7 +609,7 @@ namespace CampScheduler
                 }
                 for (int i = 0; i < Times.Length; i++)
                 {
-                    if (ScheduleData[i, startGroupID] == Act.Name)
+                    if (ScheduleData[i, groupID] == Act.Name)
                     {
                         return ScheduleActivityReturnCode.Duplicate;
                     }
@@ -621,9 +621,10 @@ namespace CampScheduler
         }
         private void ScheduleRegularActivities(int[] LunchNumsCount)
         {
-            List<byte> BookableActInds = new List<byte>();
-            Dictionary<byte, byte> BookableActivityToLunchNum = new Dictionary<byte, byte>();
-            List<byte> OverflowActInds = new List<byte>();
+            var BookableActInds = new List<byte>();
+            var GroupInds = Enumerable.ToList(Enumerable.Range(0,Groups.Length));
+            var BookableActivityToLunchNum = new Dictionary<byte, byte>();
+            var OverflowActInds = new List<byte>();
 
             for (byte i = 0; i < Activities.Count; i++)
             {
@@ -661,9 +662,11 @@ namespace CampScheduler
             {
                 currentBookableActIndInd = 0;
                 BookableActInds = new List<byte>(BookableActInds.OrderBy(_ => Gen.Next()));
+                GroupInds = new List<int>(GroupInds.OrderBy(_ => Gen.Next()));
 
-                for (int GroupInd = 0; GroupInd < Groups.Length; GroupInd++)
+                for (int GroupIndInd = 0; GroupIndInd < Groups.Length; GroupIndInd++)
                 {
+                    var GroupInd = GroupInds[GroupIndInd];
                     var group = Groups[GroupInd];
 
                     if (group.SpecialGroup) continue;
@@ -699,7 +702,7 @@ namespace CampScheduler
                         break;
                     }
 
-                    if(ScheduleCode == ScheduleActivityReturnCode.SpecialGroup)
+                    if(!needsOverflow && ScheduleCode == ScheduleActivityReturnCode.SpecialGroup)
                     {
                         continue;
                     }
