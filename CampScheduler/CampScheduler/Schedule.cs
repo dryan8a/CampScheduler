@@ -636,6 +636,7 @@ namespace CampScheduler
 
             return ScheduleActivityReturnCode.Success;
         }
+
         private void ScheduleRegularActivities(int[] LunchNumsCount)
         {
             var BookableActInds = new List<byte>();
@@ -665,9 +666,11 @@ namespace CampScheduler
                         genNum -= LunchNumsCount[currentLunchNum - 1];
                         currentLunchNum++;
                     }
-                    if (isBookedInBlock(i, LunchNumToTimeIndex[currentLunchNum]))
+                    byte originalLunchNum = currentLunchNum;
+                    while(isBookedInBlock(i, LunchNumToTimeIndex[currentLunchNum]))
                     {
-                        currentLunchNum = (byte)((currentLunchNum + 1) % LunchNumToTimeIndex.Count);
+                        currentLunchNum = (byte)(currentLunchNum % LunchNumToTimeIndex.Count + 1);
+                        if (originalLunchNum == currentLunchNum) throw new Exception($"Couldn't give specialist for {Activities[i].Name} a lunch; check rules table to see if they were overbooked");
                     }
 
                     BookableActivityToLunchNum.Add(i, currentLunchNum);
@@ -707,13 +710,13 @@ namespace CampScheduler
                             BookableActInds.RemoveAt(currentBookableActIndInd);
                             BookableActInds.Add(temp);
 
-                            if (originalBookableName == Activities[BookableActInds[currentBookableActIndInd]].Name)
+                            currentAct = Activities[BookableActInds[currentBookableActIndInd]];
+
+                            if (originalBookableName == currentAct.Name)
                             {
                                 needsOverflow = true;
                                 break;
                             }
-
-                            currentAct = Activities[BookableActInds[currentBookableActIndInd]];
                             continue;
                         }
                         break;
