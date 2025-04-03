@@ -137,13 +137,15 @@ namespace CampScheduler
         private SpecialActivityPrefs[] SpecActPrefs;
 
         internal Group[] Groups { get; }
-        internal Dictionary<Grade, byte> GradeToUnit;
+        internal Dictionary<Grade, byte> GradeToUnit { get; }
+
 
         internal List<Rule> Rules { get; }
+        internal List<byte> GroupIDsWithRuleWActs { get; }
 
         internal string[] Times { get; }
 
-        private Random Gen;
+        private Random Gen { get; }
 
         internal Schedule(int numOfBlocks, Group[] groups, string[] times, Dictionary<byte,byte> lunchNumToTimeIndex, Dictionary<Grade,byte> gradeToUnit, SpecialActivityPrefs[] specActPrefs)
         {
@@ -165,6 +167,7 @@ namespace CampScheduler
             Gen = new Random();
 
             Rules = new List<Rule>();
+            GroupIDsWithRuleWActs = new List<byte>();
         }
 
         public void AddActivity(string name, bool waterActivity, bool overflow, byte[] numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike, bool specialist)
@@ -436,7 +439,7 @@ namespace CampScheduler
         private ScheduleActivityReturnCode CanScheduleWater(byte wActID, int TimeIndex, byte startGroupID, int numOfGroupsIndex)
         {
             int endGroupID = startGroupID + Activities[wActID].GetNumOfGroups(numOfGroupsIndex);
-            for (int groupID = startGroupID; groupID < endGroupID; groupID++)
+            for (byte groupID = startGroupID; groupID < endGroupID; groupID++)
             {
                 if(groupID >= Groups.Count()) break;
                 if(Activities[wActID].GradeOnly.Length > 0 && !Activities[wActID].GradeOnly.Contains(Groups[groupID].Grade))
@@ -455,6 +458,7 @@ namespace CampScheduler
                 {
                     return ScheduleActivityReturnCode.BookedOpen;
                 }
+                if (isBookedInBlock(wActID, TimeIndex) || GroupIDsWithRuleWActs.Contains(groupID)) return ScheduleActivityReturnCode.Duplicate;
             }
             return ScheduleActivityReturnCode.Success;
         }
@@ -462,12 +466,18 @@ namespace CampScheduler
         private void ScheduleWaterActivities()
         {
             var waterActivityTimesAvailable = new List<(byte, int)>();
-            int lunchBlock = LunchNumToTimeIndex[(byte)(Gen.Next(LunchNumToTimeIndex.Count) + 1)];
+            byte lunchNum;
             foreach (Activity wAct in WaterActivities)
             {
+                lunchNum = (byte)(Gen.Next(LunchNumToTimeIndex.Count) + 1);
+                if (isBookedInBlock(wAct.Id, LunchNumToTimeIndex[lunchNum]))
+                {
+                    lunchNum = (byte)((lunchNum + 1) % LunchNumToTimeIndex.Count);
+                }
+
                 for (int i = 0; i < Times.Count(); i++)
                 {
-                    if (i == lunchBlock && wAct.IsSpecialist) continue;
+                    if (i == LunchNumToTimeIndex[lunchNum] && wAct.IsSpecialist) continue;
                     waterActivityTimesAvailable.Add((wAct.Id, i));
                 }
             }
@@ -508,6 +518,13 @@ namespace CampScheduler
                     while (groupID < Groups.Length && UnitOpen[Groups[groupID].Unit - 1]) groupID++;
 
                     if (groupID >= Groups.Length) break;
+
+                    if (GroupIDsWithRuleWActs.Contains(groupID))
+                    {
+                        groupID++;
+                        availableIndex--;
+                        continue;
+                    }
 
                     if (availableIndex == waterActivityTimesAvailable.Count)
                     {
@@ -761,11 +778,16 @@ namespace CampScheduler
                 foreach (var groupID in rule.GroupIDs)
                 {
                     ScheduleData[timeIndex, groupID] = Activities[actID].Name;
+
+                    if (Activities[actID].WaterActivity)
+                    {
+                        GroupIDsWithRuleWActs.Add(groupID);
+                    }
                 }
             }
 
             //Water Scheduling
-            //ScheduleWaterActivities();
+            ScheduleWaterActivities();
 
             //Regular Activity Scheduling
             ScheduleRegularActivities(LunchNumsCount);
