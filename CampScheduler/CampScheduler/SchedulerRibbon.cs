@@ -1,5 +1,6 @@
 ﻿using Microsoft.Office.Tools.Ribbon;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -26,13 +27,16 @@ namespace CampScheduler
         private void GenerateEmptyInputButton_Click(object sender, RibbonControlEventArgs e)
         {
             var emptyInputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            emptyInputSheet.Range["A1"].Value2 = "This is a generated empty input for the scheduler!";
+            //emptyInputSheet.Range["A1"].Value2 = "This is a generated empty input for the scheduler!";
+            
+            Globals.ThisAddIn.Application.Workbooks.Open(@"CampSchedulerInputExamples.xlsx");
+            ;
         }
 
         private void GenerateExampleInputButton_Click(object sender, RibbonControlEventArgs e)
         {
             var exampleInputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            exampleInputSheet.Range["A1"].Value2 = "This is a generated example input for the scheduler!";
+            //exampleInputSheet.Range["A1"].Value2 = "This is a generated example input for the scheduler!";
         }
 
         private void GenerateOutputButton_Click(object sender, RibbonControlEventArgs e)
