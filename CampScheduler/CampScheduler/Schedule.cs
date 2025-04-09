@@ -29,7 +29,7 @@ namespace CampScheduler
         NA
     }
 
-    public struct Activity
+    public readonly struct Activity
     {
         public byte Id { get; }
         public string Name { get; }
@@ -60,7 +60,7 @@ namespace CampScheduler
         }
     }
 
-    public struct Group
+    public readonly struct Group
     {
         public byte RowNum { get; }
         public string Name { get; }
@@ -133,8 +133,8 @@ namespace CampScheduler
         internal List<Activity> WaterActivities { get; }
         int WActMaxNumofGroups;
 
-        private Dictionary<byte, byte> LunchNumToTimeIndex;
-        private SpecialActivityPrefs[] SpecActPrefs;
+        private readonly Dictionary<byte, byte> LunchNumToTimeIndex;
+        private readonly SpecialActivityPrefs[] SpecActPrefs;
 
         internal Group[] Groups { get; }
         internal Dictionary<Grade, byte> GradeToUnit { get; }
@@ -304,7 +304,7 @@ namespace CampScheduler
                     GradeToUnit.Add(grade, (byte)unit);
                 }
             }
-            catch(Exception ex)
+            catch (Exception)
             {
                 throw new Exception("Failed to parse groups table; check for empty or invalid inputs");
             }
@@ -334,7 +334,7 @@ namespace CampScheduler
                     specActPrefs[i] = new SpecialActivityPrefs(openingCirclePref, middleCirclePref, popsicleTimePref, closingCirclePref, openPref, specialEntPrefs);
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw new Exception("Failed to parse blocks table; check for empty or invalid inputs");
             }
@@ -356,7 +356,7 @@ namespace CampScheduler
                     schedule.AddActivity(name, water, overflow, numOfGroups.Trim(' ').Split(',').Select(n => byte.Parse(n.Trim(' '))).ToArray(), open, onlyGrades, strikedGrades, isSpecialist);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw new Exception("Failed to parse activities table; check for empty or invalid inputs");
             }
@@ -371,7 +371,7 @@ namespace CampScheduler
                     schedule.AddRule(groupIDs,actIds, timeIndeces);
                 }
             }
-            catch(Exception ex)
+            catch(Exception)
             {
                 throw new Exception("Failed to parse rules table; check for empty or invalid inputs");
             }
@@ -426,7 +426,7 @@ namespace CampScheduler
             }
         }
 
-        private bool isBookedInBlock(byte ActID, int TimeIndex)
+        private bool IsBookedInBlock(byte ActID, int TimeIndex)
         {
             for (int i = 0; i < Groups.Length; i++)
             {
@@ -458,7 +458,7 @@ namespace CampScheduler
                 {
                     return ScheduleActivityReturnCode.BookedOpen;
                 }
-                if (isBookedInBlock(wActID, TimeIndex) || GroupIDsWithRuleWActs.Contains(groupID)) return ScheduleActivityReturnCode.Duplicate;
+                if (IsBookedInBlock(wActID, TimeIndex) || GroupIDsWithRuleWActs.Contains(groupID)) return ScheduleActivityReturnCode.Duplicate;
             }
             return ScheduleActivityReturnCode.Success;
         }
@@ -470,7 +470,7 @@ namespace CampScheduler
             foreach (Activity wAct in WaterActivities)
             {
                 lunchNum = (byte)(Gen.Next(LunchNumToTimeIndex.Count) + 1);
-                if (isBookedInBlock(wAct.Id, LunchNumToTimeIndex[lunchNum]))
+                if (IsBookedInBlock(wAct.Id, LunchNumToTimeIndex[lunchNum]))
                 {
                     lunchNum = (byte)((lunchNum + 1) % LunchNumToTimeIndex.Count);
                 }
@@ -510,8 +510,7 @@ namespace CampScheduler
                 ScheduledWaters.Clear();
                 bool failed = false;
 
-                int numOfMaxGroupsIndex;
-                int minGroupsIndex = Math.DivRem(failCount, waterActivityTimesAvailable.Count(), out numOfMaxGroupsIndex);
+                int minGroupsIndex = Math.DivRem(failCount, waterActivityTimesAvailable.Count(), out int numOfMaxGroupsIndex);
 
                 for (byte groupID = 0, availableIndex = 0;; availableIndex++)
                 {
@@ -631,7 +630,7 @@ namespace CampScheduler
                         return ScheduleActivityReturnCode.Duplicate;
                     }
                 }
-                if (isBookedInBlock(ActID, TimeIndex)) return ScheduleActivityReturnCode.Duplicate;
+                if (IsBookedInBlock(ActID, TimeIndex)) return ScheduleActivityReturnCode.Duplicate;
             }
 
             return ScheduleActivityReturnCode.Success;
@@ -667,7 +666,7 @@ namespace CampScheduler
                         currentLunchNum++;
                     }
                     byte originalLunchNum = currentLunchNum;
-                    while(isBookedInBlock(i, LunchNumToTimeIndex[currentLunchNum]))
+                    while(IsBookedInBlock(i, LunchNumToTimeIndex[currentLunchNum]))
                     {
                         currentLunchNum = (byte)(currentLunchNum % LunchNumToTimeIndex.Count + 1);
                         if (originalLunchNum == currentLunchNum) throw new Exception($"Couldn't give specialist for {Activities[i].Name} a lunch; check rules table to see if they were overbooked");
@@ -762,8 +761,7 @@ namespace CampScheduler
             int[] LunchNumsCount = new int[LunchNumToTimeIndex.Count];
             foreach (Group group in Groups)
             {
-                byte timeIndex;
-                if(!LunchNumToTimeIndex.TryGetValue(group.LunchNum,out timeIndex))
+                if (!LunchNumToTimeIndex.TryGetValue(group.LunchNum, out byte timeIndex))
                 {
                     throw new Exception("Invalid Lunch Number entered in groups table; change groups table or add time to blocks table");
                 }

@@ -17,27 +17,55 @@ namespace CampScheduler
         {
             GenerateEmptyInputButton.Click += GenerateEmptyInputButton_Click;
             GenerateExampleInputButton.Click += GenerateExampleInputButton_Click;
-
+            GenerateEmptyWeekButton.Click += GenerateEmptyWeekButton_Click;
+            GenerateExampleWeekButton.Click += GenerateExampleWeekButton_Click;
         }
-
         private void GenerateInputButton_SelectionChanged(object sender, RibbonControlEventArgs e)
         {   
         }
 
         private void GenerateEmptyInputButton_Click(object sender, RibbonControlEventArgs e)
         {
-            var emptyInputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            var currentWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
             //emptyInputSheet.Range["A1"].Value2 = "This is a generated empty input for the scheduler!";
             
-            Globals.ThisAddIn.Application.Workbooks.Open(@"CampSchedulerInputExamples.xlsx");
-            ;
+            Globals.ThisAddIn.Application.Workbooks.Open(AppDomain.CurrentDomain.BaseDirectory + "CampSchedulerInputExamples.xlsx");
+
+            var exampleWorkbookIndex = Globals.ThisAddIn.Application.Workbooks.Count; //THIS IS NOT THREAD SAFE, PLEASE PROGRAMATICALLY OPEN ANY OTHER WORKBOOKS (luckily it should hopefully just crash and not harm data)
+            var exampleWorkbook = Globals.ThisAddIn.Application.Workbooks[exampleWorkbookIndex];
+            
+            exampleWorkbook.Windows[1].Visible = false;
+            ((Excel.Worksheet)exampleWorkbook.Worksheets[2]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
+
+            exampleWorkbook.Close(false);
         }
 
         private void GenerateExampleInputButton_Click(object sender, RibbonControlEventArgs e)
         {
-            var exampleInputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            //exampleInputSheet.Range["A1"].Value2 = "This is a generated example input for the scheduler!";
+            var currentWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
+            //emptyInputSheet.Range["A1"].Value2 = "This is a generated example input for the scheduler!";
+
+            Globals.ThisAddIn.Application.Workbooks.Open(AppDomain.CurrentDomain.BaseDirectory + "CampSchedulerInputExamples.xlsx");
+
+            var exampleWorkbookIndex = Globals.ThisAddIn.Application.Workbooks.Count; //THIS IS NOT THREAD SAFE, PLEASE PROGRAMATICALLY OPEN ANY OTHER WORKBOOKS (luckily it should hopefully just crash and not harm data)
+            var exampleWorkbook = Globals.ThisAddIn.Application.Workbooks[exampleWorkbookIndex];
+
+            exampleWorkbook.Windows[1].Visible = false;
+            ((Excel.Worksheet)exampleWorkbook.Worksheets[1]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
+
+            exampleWorkbook.Close(false);
         }
+
+        private void GenerateExampleWeekButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void GenerateEmptyWeekButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
 
         private void GenerateOutputButton_Click(object sender, RibbonControlEventArgs e)
         {
