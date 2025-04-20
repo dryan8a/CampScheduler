@@ -259,7 +259,7 @@
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>true</SignManifests>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
     <ManifestKeyFile>CampScheduler_TemporaryKey.pfx</ManifestKeyFile>
@@ -268,7 +268,7 @@
     <ManifestCertificateThumbprint>314EA1B2A6CEB76C54F91A62CA69A41A22C1CDA7</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>CampScheduler_TemporaryKey.pfx</AssemblyOriginatorKeyFile>
