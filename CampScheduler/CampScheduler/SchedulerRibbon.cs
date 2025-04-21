@@ -58,12 +58,34 @@ namespace CampScheduler
 
         private void GenerateExampleWeekButton_Click(object sender, RibbonControlEventArgs e)
         {
-            throw new NotImplementedException();
+            var currentWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
+            //emptyInputSheet.Range["A1"].Value2 = "This is a generated empty input for the scheduler!";
+
+            Globals.ThisAddIn.Application.Workbooks.Open(AppDomain.CurrentDomain.BaseDirectory + "CampSchedulerInputExamples.xlsx");
+
+            var exampleWorkbookIndex = Globals.ThisAddIn.Application.Workbooks.Count; //THIS IS NOT THREAD SAFE, PLEASE PROGRAMATICALLY OPEN ANY OTHER WORKBOOKS (luckily it should hopefully just crash and not harm data)
+            var exampleWorkbook = Globals.ThisAddIn.Application.Workbooks[exampleWorkbookIndex];
+
+            exampleWorkbook.Windows[1].Visible = false;
+            ((Excel.Worksheet)exampleWorkbook.Worksheets[2]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
+
+            exampleWorkbook.Close(false);
         }
 
         private void GenerateEmptyWeekButton_Click(object sender, RibbonControlEventArgs e)
         {
-            throw new NotImplementedException();
+            var currentWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
+            //emptyInputSheet.Range["A1"].Value2 = "This is a generated empty input for the scheduler!";
+
+            Globals.ThisAddIn.Application.Workbooks.Open(AppDomain.CurrentDomain.BaseDirectory + "CampSchedulerInputExamples.xlsx");
+
+            var exampleWorkbookIndex = Globals.ThisAddIn.Application.Workbooks.Count; //THIS IS NOT THREAD SAFE, PLEASE PROGRAMATICALLY OPEN ANY OTHER WORKBOOKS (luckily it should hopefully just crash and not harm data)
+            var exampleWorkbook = Globals.ThisAddIn.Application.Workbooks[exampleWorkbookIndex];
+
+            exampleWorkbook.Windows[1].Visible = false;
+            ((Excel.Worksheet)exampleWorkbook.Worksheets[2]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
+
+            exampleWorkbook.Close(false);
         }
 
 

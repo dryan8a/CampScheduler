@@ -39,12 +39,12 @@
             this.GenerateInputButton = this.Factory.CreateRibbonDropDown();
             this.GenerateEmptyInputButton = this.Factory.CreateRibbonButton();
             this.GenerateExampleInputButton = this.Factory.CreateRibbonButton();
+            this.GenerateEmptyWeekButton = this.Factory.CreateRibbonButton();
+            this.GenerateExampleWeekButton = this.Factory.CreateRibbonButton();
             this.OpenInputButton = this.Factory.CreateRibbonButton();
             this.group2 = this.Factory.CreateRibbonGroup();
             this.GenerateOutputButton = this.Factory.CreateRibbonButton();
             this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
-            this.GenerateEmptyWeekButton = this.Factory.CreateRibbonButton();
-            this.GenerateExampleWeekButton = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -85,6 +85,16 @@
             this.GenerateExampleInputButton.Label = "Example Day";
             this.GenerateExampleInputButton.Name = "GenerateExampleInputButton";
             // 
+            // GenerateEmptyWeekButton
+            // 
+            this.GenerateEmptyWeekButton.Label = "Empty Week";
+            this.GenerateEmptyWeekButton.Name = "GenerateEmptyWeekButton";
+            // 
+            // GenerateExampleWeekButton
+            // 
+            this.GenerateExampleWeekButton.Label = "Example Week";
+            this.GenerateExampleWeekButton.Name = "GenerateExampleWeekButton";
+            // 
             // OpenInputButton
             // 
             this.OpenInputButton.Label = "Open Input File";
@@ -106,16 +116,6 @@
             // OpenInputFileDialog
             // 
             this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
-            // 
-            // GenerateEmptyWeekButton
-            // 
-            this.GenerateEmptyWeekButton.Label = "Empty Week";
-            this.GenerateEmptyWeekButton.Name = "GenerateEmptyWeekButton";
-            // 
-            // GenerateExampleWeekButton
-            // 
-            this.GenerateExampleWeekButton.Label = "Example Week";
-            this.GenerateExampleWeekButton.Name = "GenerateExampleWeekButton";
             // 
             // SchedulerRibbon
             // 
