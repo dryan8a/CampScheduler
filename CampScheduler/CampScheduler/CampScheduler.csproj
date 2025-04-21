@@ -227,6 +227,7 @@
     <None Include="CampSchedulerInputExamples.xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="CampScheduler_TemporaryKey.pfx" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -264,7 +265,7 @@
     <ManifestKeyFile>CampScheduler_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestCertificateThumbprint>314EA1B2A6CEB76C54F91A62CA69A41A22C1CDA7</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>08087E87A0890241ACB22D56C7FD888C1197A25B</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
