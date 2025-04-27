@@ -236,13 +236,15 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="Schedule.cs" />
+    <Compile Include="DaySchedule.cs" />
+    <Compile Include="SchedulerParser.cs" />
     <Compile Include="SchedulerRibbon.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="SchedulerRibbon.Designer.cs">
       <DependentUpon>SchedulerRibbon.cs</DependentUpon>
     </Compile>
+    <Compile Include="ScheduleStructs.cs" />
     <Compile Include="ThisAddIn.cs">
       <SubType>Code</SubType>
     </Compile>

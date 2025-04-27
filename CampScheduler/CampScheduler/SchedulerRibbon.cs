@@ -89,7 +89,7 @@ namespace CampScheduler
         }
 
 
-        private void GenerateOutputButton_Click(object sender, RibbonControlEventArgs e)
+        private void GenerateDayOutputButton_Click(object sender, RibbonControlEventArgs e)
         {
             var inputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
 
@@ -103,17 +103,17 @@ namespace CampScheduler
 
             int groupBottom = 3;
             while (inputSheet.Range["S" + ++groupBottom].Value2 != null) ;
-            var groupData = inputSheet.Range["S3", "X" + (groupBottom - 1)];
+            var groupData = inputSheet.Range["S3", "W" + (groupBottom - 1)];
 
             int rulesBottom = 3;
             while (inputSheet.Range["Y" + ++rulesBottom].Value2 != null) ;
             var rulesData = inputSheet.Range["Y3", "AA" + (rulesBottom - 1)];
 
-            Schedule schedule;
+            DaySchedule schedule;
             //error handling commented out for testing purposes
             try
             {
-                schedule = Schedule.GenerateSchedule(blockData, activityData, groupData, rulesData);
+                schedule = SchedulerParser.GenerateDaySchedule(blockData, activityData, groupData, rulesData);
             }
             catch (Exception ex)
             {
@@ -136,9 +136,89 @@ namespace CampScheduler
             schedule.OutputSchedule(outputSheet.Range["A1","Z100"]);
         }
 
-        private void OpenInputButton_Click(object sender, RibbonControlEventArgs e)
+        private void GenerateWeekOutputButton_Click(object sender, RibbonControlEventArgs e)
         {
-            OpenInputFileDialog.ShowDialog();
+            var inputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
+
+            int blockBottom = 3;
+            while (inputSheet.Range["A" + ++blockBottom].Value2 != null) ;
+            var blockData = inputSheet.Range["A3", "I" + (blockBottom - 1)];
+
+            int activityBottom = 3;
+            while (inputSheet.Range["K" + ++activityBottom].Value2 != null) ;
+            var activityData = inputSheet.Range["K3", "R" + (activityBottom - 1)];
+
+            int groupBottom = 3;
+            while (inputSheet.Range["T" + ++groupBottom].Value2 != null) ;
+            var groupData = inputSheet.Range["T3", "X" + (groupBottom - 1)];
+
+            int rulesBottom = 3;
+            while (inputSheet.Range["Y" + ++rulesBottom].Value2 != null) ;
+            var rulesData = inputSheet.Range["Z3", "AC" + (rulesBottom - 1)];
+
+            var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            errorSheet.Range["A1"].Value2 = "Week Generation Not Available. Launching soon.";
+
+            //WeekSchedule schedule;
+
+            ////error handling commented out for testing purposes
+            //try
+            //{
+            //    schedule = SchedulerParser.GenerateWeekSchedule(blockData, activityData, groupData, rulesData);
+            //}
+            //catch (Exception ex)
+            //{
+            //    var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            //    errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
+            //    errorSheet.Range["A2"].Value2 = ex.Message;
+            //    return;
+            //}
+
+            //GC.Collect();
+            //GC.WaitForPendingFinalizers();
+
+            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(inputSheet);
+            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
+            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
+            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
+
+
+            //var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            //schedule.OutputSchedule(outputSheet.Range["A1", "Z100"]);
+        }
+
+        private void FormatOutputButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            var outputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
+
+            int columnsWidth = -1;
+            while (outputSheet.Range[(char)('A' + ++columnsWidth) + "4"].Value2 != null)
+            {
+                outputSheet.Range[(char)('A' + columnsWidth) + "4"].ColumnWidth = 22;
+            }
+
+            int rows = 3;
+            outputSheet.Range["A1","A3"].RowHeight = 20;
+
+            bool isColorRow = false;
+            while (outputSheet.Range["A" + ++rows].Value2 != null)
+            {
+                outputSheet.Range["A" + rows].RowHeight = 46;
+
+                if(isColorRow) outputSheet.Range["A" + rows, ((char)('A' + columnsWidth - 1)).ToString() + rows].Interior.Color = Excel.XlRgbColor.rgbLightGrey;
+                
+                isColorRow = !isColorRow;
+            }
+
+            var outputRange = outputSheet.Range["A1", ((char)('A' + columnsWidth)).ToString() + (rows - 1)];
+
+            outputRange.Cells.Font.Name = "Arial";
+
+            var firstColRange = outputRange.Range["A1", "A" + (rows - 1)];
+            firstColRange.Borders[XlBordersIndex.xlEdgeRight].LineStyle = Excel.XlLineStyle.xlContinuous;
+
+            outputSheet.PageSetup.Zoom = false;
+
         }
     }
 }

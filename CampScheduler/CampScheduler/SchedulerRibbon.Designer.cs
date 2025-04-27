@@ -41,10 +41,11 @@
             this.GenerateExampleInputButton = this.Factory.CreateRibbonButton();
             this.GenerateEmptyWeekButton = this.Factory.CreateRibbonButton();
             this.GenerateExampleWeekButton = this.Factory.CreateRibbonButton();
-            this.OpenInputButton = this.Factory.CreateRibbonButton();
             this.group2 = this.Factory.CreateRibbonGroup();
-            this.GenerateOutputButton = this.Factory.CreateRibbonButton();
+            this.GenerateDayOutputButton = this.Factory.CreateRibbonButton();
             this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
+            this.GenerateWeekOutputButton = this.Factory.CreateRibbonButton();
+            this.FormatOutputButton = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -61,8 +62,7 @@
             // group1
             // 
             this.group1.Items.Add(this.GenerateInputButton);
-            this.group1.Items.Add(this.OpenInputButton);
-            this.group1.Label = "Input Tools";
+            this.group1.Label = "Input";
             this.group1.Name = "group1";
             // 
             // GenerateInputButton
@@ -95,27 +95,35 @@
             this.GenerateExampleWeekButton.Label = "Example Week";
             this.GenerateExampleWeekButton.Name = "GenerateExampleWeekButton";
             // 
-            // OpenInputButton
-            // 
-            this.OpenInputButton.Label = "Open Input File";
-            this.OpenInputButton.Name = "OpenInputButton";
-            this.OpenInputButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.OpenInputButton_Click);
-            // 
             // group2
             // 
-            this.group2.Items.Add(this.GenerateOutputButton);
+            this.group2.Items.Add(this.GenerateDayOutputButton);
+            this.group2.Items.Add(this.GenerateWeekOutputButton);
+            this.group2.Items.Add(this.FormatOutputButton);
             this.group2.Label = "Output";
             this.group2.Name = "group2";
             // 
-            // GenerateOutputButton
+            // GenerateDayOutputButton
             // 
-            this.GenerateOutputButton.Label = "Generate Output";
-            this.GenerateOutputButton.Name = "GenerateOutputButton";
-            this.GenerateOutputButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GenerateOutputButton_Click);
+            this.GenerateDayOutputButton.Label = "Generate Output (Day)";
+            this.GenerateDayOutputButton.Name = "GenerateDayOutputButton";
+            this.GenerateDayOutputButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GenerateDayOutputButton_Click);
             // 
             // OpenInputFileDialog
             // 
             this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
+            // 
+            // GenerateWeekOutputButton
+            // 
+            this.GenerateWeekOutputButton.Label = "Generate Output (Week)";
+            this.GenerateWeekOutputButton.Name = "GenerateWeekOutputButton";
+            this.GenerateWeekOutputButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GenerateWeekOutputButton_Click);
+            // 
+            // FormatOutputButton
+            // 
+            this.FormatOutputButton.Label = "Format Output";
+            this.FormatOutputButton.Name = "FormatOutputButton";
+            this.FormatOutputButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.FormatOutputButton_Click);
             // 
             // SchedulerRibbon
             // 
@@ -141,11 +149,12 @@
         internal Microsoft.Office.Tools.Ribbon.RibbonDropDown GenerateInputButton;
         private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateEmptyInputButton;
         private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateExampleInputButton;
-        internal Microsoft.Office.Tools.Ribbon.RibbonButton OpenInputButton;
         private System.Windows.Forms.OpenFileDialog OpenInputFileDialog;
-        internal Microsoft.Office.Tools.Ribbon.RibbonButton GenerateOutputButton;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton GenerateDayOutputButton;
         private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateEmptyWeekButton;
         private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateExampleWeekButton;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton GenerateWeekOutputButton;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton FormatOutputButton;
     }
 
     partial class ThisRibbonCollection

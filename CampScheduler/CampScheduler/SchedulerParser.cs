@@ -1,0 +1,284 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Excel = Microsoft.Office.Interop.Excel;
+
+namespace CampScheduler
+{
+    public static class SchedulerParser
+    {
+        public static Grade ParseGrade(string gradeInput)
+        {
+            switch (gradeInput)
+            {
+                case "PK":
+                    return Grade.PK;
+                case "K":
+                    return Grade.K;
+                case "1":
+                    return Grade.First;
+                case "2":
+                    return Grade.Second;
+                case "3":
+                    return Grade.Third;
+                case "4":
+                    return Grade.Fourth;
+                case "5":
+                    return Grade.Fifth;
+                case "6":
+                    return Grade.Sixth;
+                case "MS":
+                    return Grade.MS;
+                default:
+                    return Grade.NA;
+            }
+        }
+
+        public static Grade[] ParseGrades(string gradesInput)
+        {
+            var gradeStrings = gradesInput.Split(',');
+
+            if (gradeStrings[0][0] == 'a')
+            {
+                return new[] { Grade.PK, Grade.K, Grade.First, Grade.Second, Grade.Third, Grade.Fourth, Grade.Fifth, Grade.Sixth, Grade.MS };
+            }
+
+            Grade[] grades = new Grade[gradeStrings.Length];
+
+            for (int i = 0; i < grades.Length; i++)
+            {
+                grades[i] = ParseGrade(gradeStrings[i].Trim());
+                if (grades[i] == Grade.NA) return new Grade[0];
+            }
+
+            return grades;
+        }
+
+        public static bool YNParse(string ynInput) => ynInput == "y";
+
+        public static DaySchedule GenerateDaySchedule(Excel.Range blockData, Excel.Range activityData, Excel.Range groupData, Excel.Range rulesData)
+        {
+            Group[] groups = new Group[groupData.Rows.Count];
+            var GradeToUnit = new Dictionary<Grade, byte>();
+            var WaterGroupingToGroups = new Dictionary<byte, byte>();
+
+            try
+            {
+                for (byte i = 0; i < groups.Length; i++)
+                {
+                    var name = groupData.Cells.Value2[i + 1, 1];
+                    var grade = ParseGrade(groupData.Cells.Value2[i + 1, 3].ToString());
+                    var unit = groupData.Cells.Value2[i + 1, 4];
+                    bool specialGroup = YNParse(groupData.Cells.Value2[i + 1, 2]);
+                    var lunch = groupData.Cells.Value2[i + 1, 5];
+                    //var waterGrouping = groupData.Cells.Value2[i + 1, 6];
+                    groups[i] = new Group(i, name, grade, (byte)unit, specialGroup, (byte)lunch);
+
+                    if (GradeToUnit.ContainsKey(grade)) continue;
+                    GradeToUnit.Add(grade, (byte)unit);
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to parse groups table; check for empty or invalid inputs");
+            }
+
+
+            Dictionary<byte, byte> lunchNumToTimeIndex = new Dictionary<byte, byte>();
+            string[] times = new string[blockData.Rows.Count];
+
+            var specActPrefs = new SpecialActivityPrefs[blockData.Rows.Count];
+            try
+            {
+                for (byte i = 0; i < blockData.Rows.Count; i++)
+                {
+                    var timeName = blockData.Cells[i + 1, 1].Text;
+                    times[i] = timeName;
+
+                    var lunchNum = blockData.Cells.Value2[i + 1, 2];
+                    if (lunchNum != 0) lunchNumToTimeIndex.Add((byte)lunchNum, i);
+
+                    char openingCirclePref = blockData.Cells.Value2[i + 1, 3].ToString()[0];
+                    char middleCirclePref = blockData.Cells.Value2[i + 1, 4].ToString()[0];
+                    char popsicleTimePref = blockData.Cells.Value2[i + 1, 5].ToString()[0];
+                    char closingCirclePref = blockData.Cells.Value2[i + 1, 6].ToString()[0];
+                    char openPref = blockData.Cells.Value2[i + 1, 7].ToString()[0];
+                    string specialEntPrefs = blockData.Cells.Value2[i + 1, 8].ToString();
+
+                    specActPrefs[i] = new SpecialActivityPrefs(openingCirclePref, middleCirclePref, popsicleTimePref, closingCirclePref, openPref, specialEntPrefs);
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to parse blocks table; check for empty or invalid inputs");
+            }
+
+            var schedule = new DaySchedule(blockData.Rows.Count, groups, times, lunchNumToTimeIndex, GradeToUnit, specActPrefs);
+
+            try
+            {
+                for (byte i = 0; i < activityData.Rows.Count; i++)
+                {
+                    var name = activityData.Cells.Value2[i + 1, 1];
+                    bool water = YNParse(activityData.Cells.Value2[i + 1, 2]);
+                    bool overflow = YNParse(activityData.Cells.Value2[i + 1, 3]);
+                    string numOfGroups = Convert.ToString(activityData.Cells.Value2[i + 1, 4]);
+                    var onlyGrades = ParseGrades(activityData.Cells.Value2[i + 1, 5]);
+                    var strikedGrades = ParseGrades(activityData.Cells.Value2[i + 1, 6]);
+                    bool open = YNParse(activityData.Cells.Value2[i + 1, 7]);
+                    bool isSpecialist = YNParse(activityData.Cells.Value2[i + 1, 8]);
+                    schedule.AddActivity(name, water, overflow, numOfGroups.Trim(' ').Split(',').Select(n => byte.Parse(n.Trim(' '))).ToArray(), open, onlyGrades, strikedGrades, isSpecialist);
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to parse activities table; check for empty or invalid inputs");
+            }
+
+            try
+            {
+                for (byte i = 0; i < rulesData.Rows.Count; i++)
+                {
+                    var groupIDs = schedule.ParseGroupOrGrade(rulesData.Cells.Value2[i + 1, 1]);
+                    var actIds = schedule.ParseActivities(rulesData.Cells.Value2[i + 1, 2]);
+                    var timeIndeces = schedule.ParseTimes(rulesData.Cells.Value2[i + 1, 3]);
+                    schedule.AddRule(groupIDs, actIds, timeIndeces);
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to parse rules table; check for empty or invalid inputs");
+            }
+
+
+            schedule.GenerateSchedule();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
+
+            return schedule;
+        }
+
+        public static DaySchedule GenerateWeekSchedule(Excel.Range blockData, Excel.Range activityData, Excel.Range groupData, Excel.Range rulesData)
+        {
+            Group[] groups = new Group[groupData.Rows.Count];
+            var GradeToUnit = new Dictionary<Grade, byte>();
+            var WaterGroupingToGroups = new Dictionary<byte, byte>();
+
+            try
+            {
+                for (byte i = 0; i < groups.Length; i++)
+                {
+                    var name = groupData.Cells.Value2[i + 1, 1];
+                    var grade = ParseGrade(groupData.Cells.Value2[i + 1, 3].ToString());
+                    var unit = groupData.Cells.Value2[i + 1, 4];
+                    bool specialGroup = YNParse(groupData.Cells.Value2[i + 1, 2]);
+                    var lunch = groupData.Cells.Value2[i + 1, 5];
+                    //var waterGrouping = groupData.Cells.Value2[i + 1, 6];
+                    groups[i] = new Group(i, name, grade, (byte)unit, specialGroup, (byte)lunch);
+
+                    if (GradeToUnit.ContainsKey(grade)) continue;
+                    GradeToUnit.Add(grade, (byte)unit);
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to parse groups table; check for empty or invalid inputs");
+            }
+
+
+            Dictionary<byte, byte> lunchNumToTimeIndex = new Dictionary<byte, byte>();
+
+            Dictionary<string, List<string>> daysAndTimes = new Dictionary<string,List<string>>();      
+
+            var specActPrefs = new SpecialActivityPrefs[blockData.Rows.Count];
+            try
+            {
+                for (byte i = 0; i < blockData.Rows.Count; i++)
+                {
+                    var dayName = blockData.Cells[i + 1, 1].Text;
+                    if(!daysAndTimes.ContainsKey(dayName))
+                    {
+                        daysAndTimes.Add(dayName, new List<string>());
+                    }
+
+                    var timeName = blockData.Cells[i + 1, 2].Text;
+                    daysAndTimes[dayName].Add(timeName);
+
+                    var lunchNum = blockData.Cells.Value2[i + 1, 3];
+                    if (lunchNum != 0) lunchNumToTimeIndex.Add((byte)lunchNum, i);
+
+                    char openingCirclePref = blockData.Cells.Value2[i + 1, 4].ToString()[0];
+                    char middleCirclePref = blockData.Cells.Value2[i + 1, 5].ToString()[0];
+                    char popsicleTimePref = blockData.Cells.Value2[i + 1, 6].ToString()[0];
+                    char closingCirclePref = blockData.Cells.Value2[i + 1, 7].ToString()[0];
+                    char openPref = blockData.Cells.Value2[i + 1, 8].ToString()[0];
+                    string specialEntPrefs = blockData.Cells.Value2[i + 1, 9].ToString();
+
+                    specActPrefs[i] = new SpecialActivityPrefs(openingCirclePref, middleCirclePref, popsicleTimePref, closingCirclePref, openPref, specialEntPrefs);
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to parse blocks table; check for empty or invalid inputs");
+            }
+
+            throw new NotImplementedException();
+
+            //var schedule = new WeekSchedule(blockData.Rows.Count, groups, daysAndTimes, lunchNumToTimeIndex, GradeToUnit, specActPrefs);
+
+            //try
+            //{
+            //    for (byte i = 0; i < activityData.Rows.Count; i++)
+            //    {
+            //        var name = activityData.Cells.Value2[i + 1, 1];
+            //        bool water = YNParse(activityData.Cells.Value2[i + 1, 2]);
+            //        bool overflow = YNParse(activityData.Cells.Value2[i + 1, 3]);
+            //        string numOfGroups = Convert.ToString(activityData.Cells.Value2[i + 1, 4]);
+            //        var onlyGrades = ParseGrades(activityData.Cells.Value2[i + 1, 5]);
+            //        var strikedGrades = ParseGrades(activityData.Cells.Value2[i + 1, 6]);
+            //        bool open = YNParse(activityData.Cells.Value2[i + 1, 7]);
+            //        bool isSpecialist = YNParse(activityData.Cells.Value2[i + 1, 8]);
+            //        schedule.AddActivity(name, water, overflow, numOfGroups.Trim(' ').Split(',').Select(n => byte.Parse(n.Trim(' '))).ToArray(), open, onlyGrades, strikedGrades, isSpecialist);
+            //    }
+            //}
+            //catch (Exception)
+            //{
+            //    throw new Exception("Failed to parse activities table; check for empty or invalid inputs");
+            //}
+
+            //try
+            //{
+            //    for (byte i = 0; i < rulesData.Rows.Count; i++)
+            //    {
+            //        var groupIDs = schedule.ParseGroupOrGrade(rulesData.Cells.Value2[i + 1, 1]);
+            //        var actIds = schedule.ParseActivities(rulesData.Cells.Value2[i + 1, 2]);
+            //        var timeIndeces = schedule.ParseTimes(rulesData.Cells.Value2[i + 1, 3]);
+            //        schedule.AddRule(groupIDs, actIds, timeIndeces);
+            //    }
+            //}
+            //catch (Exception)
+            //{
+            //    throw new Exception("Failed to parse rules table; check for empty or invalid inputs");
+            //}
+
+
+            //schedule.GenerateSchedule();
+
+            //GC.Collect();
+            //GC.WaitForPendingFinalizers();
+
+            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
+            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
+            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
+
+            //return schedule;
+        }
+    }
+}
