@@ -43,9 +43,9 @@
             this.GenerateExampleWeekButton = this.Factory.CreateRibbonButton();
             this.group2 = this.Factory.CreateRibbonGroup();
             this.GenerateDayOutputButton = this.Factory.CreateRibbonButton();
-            this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.GenerateWeekOutputButton = this.Factory.CreateRibbonButton();
             this.FormatOutputButton = this.Factory.CreateRibbonButton();
+            this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -109,10 +109,6 @@
             this.GenerateDayOutputButton.Name = "GenerateDayOutputButton";
             this.GenerateDayOutputButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GenerateDayOutputButton_Click);
             // 
-            // OpenInputFileDialog
-            // 
-            this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
-            // 
             // GenerateWeekOutputButton
             // 
             this.GenerateWeekOutputButton.Label = "Generate Output (Week)";
@@ -124,6 +120,10 @@
             this.FormatOutputButton.Label = "Format Output";
             this.FormatOutputButton.Name = "FormatOutputButton";
             this.FormatOutputButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.FormatOutputButton_Click);
+            // 
+            // OpenInputFileDialog
+            // 
+            this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
             // 
             // SchedulerRibbon
             // 

@@ -15,51 +15,26 @@ using System.Xml;
 
 namespace CampScheduler
 {
-    public class DaySchedule
+    public class DaySchedule : Schedule
     {
         public string[,] ScheduleData; //change to internal
         internal List<DayActivity> Activities { get; }
         internal List<DayActivity> WaterActivities { get; }
-        private int WActMaxNumofGroups;
 
-        private int NumOfSpecialists;
-
-        private readonly Dictionary<byte, byte> LunchNumToTimeIndex;
-        private readonly SpecialActivityPrefs[] SpecActPrefs;
-
-        internal Group[] Groups { get; }
-        internal Dictionary<Grade, byte> GradeToUnit { get; }
-
+        internal DayInfo DayInfo { get; }
 
         internal List<Rule> Rules { get; }
-        internal List<byte> GroupIDsWithRuleWActs { get; }
 
-        internal string[] Times { get; }
-
-        private Random Gen { get; }
-
-        internal DaySchedule(int numOfBlocks, Group[] groups, string[] times, Dictionary<byte,byte> lunchNumToTimeIndex, Dictionary<Grade,byte> gradeToUnit, SpecialActivityPrefs[] specActPrefs)
+        internal DaySchedule(Group[] groups, DayInfo dayInfo, Dictionary<Grade,byte> gradeToUnit) : base(groups, gradeToUnit)
         {
-            ScheduleData = new string[numOfBlocks, groups.Length];
+            ScheduleData = new string[dayInfo.Times.Length, groups.Length];
 
             Activities = new List<DayActivity>();
             WaterActivities = new List<DayActivity>();
-            WActMaxNumofGroups = 0;  //try to fix this nonsense to make it a little faster
 
-            NumOfSpecialists = 0;
-
-            Groups = groups;
-
-            LunchNumToTimeIndex = lunchNumToTimeIndex;
-            Times = times;
-            GradeToUnit = gradeToUnit;
-
-            SpecActPrefs = specActPrefs;
-
-            Gen = new Random();
+            DayInfo = dayInfo;
 
             Rules = new List<Rule>();
-            GroupIDsWithRuleWActs = new List<byte>();
         }
 
         public void AddActivity(string name, bool waterActivity, bool overflow, byte[] numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike, bool specialist)
@@ -75,7 +50,7 @@ namespace CampScheduler
             if (!waterActivity && specialist) NumOfSpecialists++;
             
         }
-
+        
         public void AddRule(byte[] groupIDs, byte[] actIDs, byte[] timeIDs)
         {
             Rules.Add(new Rule(groupIDs, actIDs, timeIDs));
@@ -97,35 +72,10 @@ namespace CampScheduler
             byte[] activityIds = new byte[timesStrings.Length];
             for (int i = 0; i < timesStrings.Length; i++)
             {
-                activityIds[i] = (byte)Array.IndexOf(Times,timesStrings[i].Trim());
+                activityIds[i] = (byte)Array.IndexOf(DayInfo.Times,timesStrings[i].Trim());
                 if (activityIds[i] == 255) throw new Exception();
             }
             return activityIds;
-        }
-
-        public byte[] ParseGroupOrGrade(string groupOrGradeInput)
-        {
-            var groupOrGradeStrings = groupOrGradeInput.Split(',');
-            List<byte> groupIds = new List<byte>();
-            foreach(string groupOrGradeString in groupOrGradeStrings)
-            {
-                string groupOrGradeStringTrim = groupOrGradeString.Trim();
-
-                Grade grade = SchedulerParser.ParseGrade(groupOrGradeStringTrim);
-                if(grade == Grade.NA)
-                {
-                    byte groupID = (byte)Array.FindIndex(Groups, x => x.Name == groupOrGradeStringTrim);
-                    if (groupID == 255) throw new Exception();
-                    groupIds.Add(groupID);
-                    continue;
-                }
-
-                for(byte i = 0; i < Groups.Length;i++) 
-                {
-                    if (Groups[i].Grade == grade && !groupIds.Contains(i)) groupIds.Add(i);
-                }
-            }
-            return groupIds.ToArray();
         }
 
         private void ScheduleSpecialActivity(byte blockNum, char unitPref, string ActivityName)
@@ -193,7 +143,7 @@ namespace CampScheduler
                 {
                     return ScheduleActivityReturnCode.Overlapped;
                 }
-                if (Activities[wActID].Open && SpecActPrefs[TimeIndex].OpenPref != 'n')
+                if (Activities[wActID].Open && DayInfo.SpecialActivityPrefs[TimeIndex].OpenPref != 'n')
                 {
                     return ScheduleActivityReturnCode.BookedOpen;
                 }
@@ -208,15 +158,15 @@ namespace CampScheduler
             byte lunchNum;
             foreach (DayActivity wAct in WaterActivities)
             {
-                lunchNum = (byte)(Gen.Next(LunchNumToTimeIndex.Count) + 1);
-                if (IsBookedInBlock(wAct.Id, LunchNumToTimeIndex[lunchNum]))
+                lunchNum = (byte)(Gen.Next(DayInfo.LunchNumToTimeIndex.Count) + 1);
+                if (IsBookedInBlock(wAct.Id, DayInfo.LunchNumToTimeIndex[lunchNum]))
                 {
-                    lunchNum = (byte)((lunchNum + 1) % LunchNumToTimeIndex.Count);
+                    lunchNum = (byte)((lunchNum + 1) % DayInfo.LunchNumToTimeIndex.Count);
                 }
 
-                for (int i = 0; i < Times.Count(); i++)
+                for (int i = 0; i < DayInfo.Times.Count(); i++)
                 {
-                    if (i == LunchNumToTimeIndex[lunchNum] && wAct.IsSpecialist) continue;
+                    if (i == DayInfo.LunchNumToTimeIndex[lunchNum] && wAct.IsSpecialist) continue;
                     waterActivityTimesAvailable.Add((wAct.Id, i));
                 }
             }
@@ -225,7 +175,7 @@ namespace CampScheduler
             int WActNumOfGroupCombos = WActMaxNumofGroups * waterActivityTimesAvailable.Count;
 
             var UnitOpen = new [] { false, false };
-            foreach(var specActPref in SpecActPrefs)
+            foreach(var specActPref in DayInfo.SpecialActivityPrefs)
             {
                 switch(specActPref.OpenPref)
                 {
@@ -358,11 +308,11 @@ namespace CampScheduler
                 {
                     return ScheduleActivityReturnCode.NotGradeOnly;
                 }
-                if (Act.Open && SpecActPrefs[TimeIndex].OpenPref != 'n')
+                if (Act.Open && DayInfo.SpecialActivityPrefs[TimeIndex].OpenPref != 'n')
                 {
                     return ScheduleActivityReturnCode.BookedOpen;
                 }
-                for (int i = 0; i < Times.Length; i++)
+                for (int i = 0; i < DayInfo.Times.Length; i++)
                 {
                     if (ScheduleData[i, groupID] == Act.Name)
                     {
@@ -406,9 +356,9 @@ namespace CampScheduler
                     //randomly choose lunch for specialist based off of lunch counts
                     byte currentLunchNum = 1;
                     
-                    while(LunchNumsCount[currentLunchNum - 1] == 0 || IsBookedInBlock(ActId, LunchNumToTimeIndex[currentLunchNum]))
+                    while(LunchNumsCount[currentLunchNum - 1] == 0 || IsBookedInBlock(ActId, DayInfo.LunchNumToTimeIndex[currentLunchNum]))
                     {
-                        currentLunchNum = (byte)(currentLunchNum % LunchNumToTimeIndex.Count + 1);
+                        currentLunchNum = (byte)(currentLunchNum % DayInfo.LunchNumToTimeIndex.Count + 1);
                         if (currentLunchNum == 1) throw new Exception($"Couldn't give specialist for {Activities[ActId].Name} a lunch; check rules table to see if they were overbooked");
                     }
 
@@ -419,7 +369,7 @@ namespace CampScheduler
             }
 
             int currentBookableActIndInd;
-            for (byte blockIndex = 0; blockIndex < Times.Length; blockIndex++)
+            for (byte blockIndex = 0; blockIndex < DayInfo.Times.Length; blockIndex++)
             {
                 currentBookableActIndInd = 0;
                 BookableActInds = new List<byte>(BookableActInds.OrderBy(_ => Gen.Next()));
@@ -444,7 +394,7 @@ namespace CampScheduler
                     while (!needsOverflow)
                     {
                         ScheduleCode = CanScheduleRegular(BookableActInds[currentBookableActIndInd], blockIndex, group.RowNum);
-                        if ((currentAct.IsSpecialist && LunchNumToTimeIndex[BookableActivityToLunchNum[BookableActInds[currentBookableActIndInd]]] == blockIndex)
+                        if ((currentAct.IsSpecialist && DayInfo.LunchNumToTimeIndex[BookableActivityToLunchNum[BookableActInds[currentBookableActIndInd]]] == blockIndex)
                             || ScheduleCode != ScheduleActivityReturnCode.Success)
                         {
                             var temp = BookableActInds[currentBookableActIndInd];
@@ -484,26 +434,26 @@ namespace CampScheduler
             }
         }
 
-        public void GenerateSchedule()
+        public override void GenerateSchedule()
         {
             //Special Activity Scheduling
-            for (byte block = 0; block < Times.Length; block++)
+            for (byte block = 0; block < DayInfo.Times.Length; block++)
             {
-                ScheduleSpecialActivity(block, SpecActPrefs[block].OpenPref, "Open Activity");
+                ScheduleSpecialActivity(block, DayInfo.SpecialActivityPrefs[block].OpenPref, "Open Activity");
 
-                ScheduleSpecialActivity(block, SpecActPrefs[block].OpeningCirclePref, "Opening Circle");
-                ScheduleSpecialActivity(block, SpecActPrefs[block].MiddleCirclePref, "Middle Circle");
-                ScheduleSpecialActivity(block, SpecActPrefs[block].PopsicleTimePref, "Popsicle Time");
-                ScheduleSpecialActivity(block, SpecActPrefs[block].ClosingCirclePref, "Closing Circle");
+                ScheduleSpecialActivity(block, DayInfo.SpecialActivityPrefs[block].OpeningCirclePref, "Opening Circle");
+                ScheduleSpecialActivity(block, DayInfo.SpecialActivityPrefs[block].MiddleCirclePref, "Middle Circle");
+                ScheduleSpecialActivity(block, DayInfo.SpecialActivityPrefs[block].PopsicleTimePref, "Popsicle Time");
+                ScheduleSpecialActivity(block, DayInfo.SpecialActivityPrefs[block].ClosingCirclePref, "Closing Circle");
 
-                ScheduleSpecialActivity(block, SpecActPrefs[block].SpecialEntPrefs, "Special Entertainment");
+                ScheduleSpecialActivity(block, DayInfo.SpecialActivityPrefs[block].SpecialEntPrefs, "Special Entertainment");
             }
 
             //Group Lunch Scheduling
-            int[] LunchNumsCount = new int[LunchNumToTimeIndex.Count];
+            int[] LunchNumsCount = new int[DayInfo.LunchNumToTimeIndex.Count];
             foreach (Group group in Groups)
             {
-                if (!LunchNumToTimeIndex.TryGetValue(group.LunchNum, out byte timeIndex))
+                if (!DayInfo.LunchNumToTimeIndex.TryGetValue(group.LunchNum, out byte timeIndex))
                 {
                     throw new Exception("Invalid Lunch Number entered in groups table; change groups table or add time to blocks table");
                 }
@@ -538,12 +488,12 @@ namespace CampScheduler
 
         public void OutputSchedule(Excel.Range outputRange)
         {
-            outputRange.Range["A1", (char)('A' + Times.Length) + "1"].Merge();
-            outputRange.Cells[1,1].Value2 = "Day";
+            outputRange.Range["A1", (char)('A' + DayInfo.Times.Length) + "1"].Merge();
+            outputRange.Cells[1, 1].Value2 = DayInfo.DayName;
 
-            for(int column = 0;column < Times.Length;column++)
+            for(int column = 0;column < DayInfo.Times.Length;column++)
             {
-                outputRange.Cells[2, column + 2].Value2 = Times[column];
+                outputRange.Cells[2, column + 2].Value2 = DayInfo.Times[column];
                 outputRange.Cells[3, column + 2].Value2 = column + 1;
             }
 
@@ -554,7 +504,7 @@ namespace CampScheduler
 
             for (int row = 0; row < Groups.Length; row++)
             {
-                for (int column = 0; column < Times.Length; column++)
+                for (int column = 0; column < DayInfo.Times.Length; column++)
                 {
                     outputRange.Cells[row+4, column+2].Value2 = ScheduleData[column, row];
                 }
@@ -564,6 +514,5 @@ namespace CampScheduler
             outputRange.Cells.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
             outputRange.Cells.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
         }
-        
     }
 }

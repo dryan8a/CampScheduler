@@ -122,6 +122,24 @@ namespace CampScheduler
         }
     }
 
+    public struct DayInfo
+    {
+        public string DayName;
+        public string[] Times;
+
+        public SpecialActivityPrefs[] SpecialActivityPrefs;
+
+        public readonly Dictionary<byte, byte> LunchNumToTimeIndex;
+
+        public DayInfo(string dayName, string[] times, SpecialActivityPrefs[] specialActivityPrefs, Dictionary<byte, byte> lunchNumToTimeIndex)
+        {
+            DayName = dayName;
+            Times = times;
+            SpecialActivityPrefs = specialActivityPrefs;
+            LunchNumToTimeIndex = lunchNumToTimeIndex;
+        }
+    }
+
     public struct Rule
     {
         public byte[] GroupIDs;

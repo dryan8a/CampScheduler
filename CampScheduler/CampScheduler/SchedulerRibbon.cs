@@ -153,18 +153,18 @@ namespace CampScheduler
             var groupData = inputSheet.Range["T3", "X" + (groupBottom - 1)];
 
             int rulesBottom = 3;
-            while (inputSheet.Range["Y" + ++rulesBottom].Value2 != null) ;
+            while (inputSheet.Range["Z" + ++rulesBottom].Value2 != null) ;
             var rulesData = inputSheet.Range["Z3", "AC" + (rulesBottom - 1)];
 
-            var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            errorSheet.Range["A1"].Value2 = "Week Generation Not Available. Launching soon.";
+            //var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            //errorSheet.Range["A1"].Value2 = "Week Generation Not Available. Launching soon.";
 
-            //WeekSchedule schedule;
+            WeekSchedule schedule;
 
-            ////error handling commented out for testing purposes
+            //error handling commented out for testing purposes
             //try
             //{
-            //    schedule = SchedulerParser.GenerateWeekSchedule(blockData, activityData, groupData, rulesData);
+                schedule = SchedulerParser.GenerateWeekSchedule(blockData, activityData, groupData, rulesData);
             //}
             //catch (Exception ex)
             //{
@@ -174,17 +174,23 @@ namespace CampScheduler
             //    return;
             //}
 
-            //GC.Collect();
-            //GC.WaitForPendingFinalizers();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
 
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(inputSheet);
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(inputSheet);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
 
+            var outputRanges = new Excel.Range[schedule.NumOfDays];
 
-            //var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            //schedule.OutputSchedule(outputSheet.Range["A1", "Z100"]);
+            for(int i = 0; i < outputRanges.Length; i++)
+            {
+                var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+                outputRanges[i] = outputSheet.Range["A1", "Z100"];
+            }
+            
+            schedule.OutputSchedule(outputRanges);
         }
 
         private void FormatOutputButton_Click(object sender, RibbonControlEventArgs e)

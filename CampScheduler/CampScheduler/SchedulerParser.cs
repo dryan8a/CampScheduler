@@ -73,7 +73,7 @@ namespace CampScheduler
                     var unit = groupData.Cells.Value2[i + 1, 4];
                     bool specialGroup = YNParse(groupData.Cells.Value2[i + 1, 2]);
                     var lunch = groupData.Cells.Value2[i + 1, 5];
-                    //var waterGrouping = groupData.Cells.Value2[i + 1, 6];
+
                     groups[i] = new Group(i, name, grade, (byte)unit, specialGroup, (byte)lunch);
 
                     if (GradeToUnit.ContainsKey(grade)) continue;
@@ -115,7 +115,9 @@ namespace CampScheduler
                 throw new Exception("Failed to parse blocks table; check for empty or invalid inputs");
             }
 
-            var schedule = new DaySchedule(blockData.Rows.Count, groups, times, lunchNumToTimeIndex, GradeToUnit, specActPrefs);
+            DayInfo dayInfo = new DayInfo("Day",times,specActPrefs,lunchNumToTimeIndex);
+
+            var schedule = new DaySchedule(groups, dayInfo, GradeToUnit);
 
             try
             {
@@ -165,7 +167,7 @@ namespace CampScheduler
             return schedule;
         }
 
-        public static DaySchedule GenerateWeekSchedule(Excel.Range blockData, Excel.Range activityData, Excel.Range groupData, Excel.Range rulesData)
+        public static WeekSchedule GenerateWeekSchedule(Excel.Range blockData, Excel.Range activityData, Excel.Range groupData, Excel.Range rulesData)
         {
             Group[] groups = new Group[groupData.Rows.Count];
             var GradeToUnit = new Dictionary<Grade, byte>();
@@ -180,7 +182,7 @@ namespace CampScheduler
                     var unit = groupData.Cells.Value2[i + 1, 4];
                     bool specialGroup = YNParse(groupData.Cells.Value2[i + 1, 2]);
                     var lunch = groupData.Cells.Value2[i + 1, 5];
-                    //var waterGrouping = groupData.Cells.Value2[i + 1, 6];
+
                     groups[i] = new Group(i, name, grade, (byte)unit, specialGroup, (byte)lunch);
 
                     if (GradeToUnit.ContainsKey(grade)) continue;
@@ -193,26 +195,22 @@ namespace CampScheduler
             }
 
 
-            Dictionary<byte, byte> lunchNumToTimeIndex = new Dictionary<byte, byte>();
-
-            Dictionary<string, List<string>> daysAndTimes = new Dictionary<string,List<string>>();      
-
-            var specActPrefs = new SpecialActivityPrefs[blockData.Rows.Count];
+            var dayInputs = new Dictionary<string, (List<string> times, Dictionary<byte, byte> lunchNumToTimeIndex, List<SpecialActivityPrefs> specActPrefs)>();   
             try
             {
                 for (byte i = 0; i < blockData.Rows.Count; i++)
                 {
-                    var dayName = blockData.Cells[i + 1, 1].Text;
-                    if(!daysAndTimes.ContainsKey(dayName))
+                    string dayName = blockData.Cells[i + 1, 1].Text;
+                    if(!dayInputs.ContainsKey(dayName))
                     {
-                        daysAndTimes.Add(dayName, new List<string>());
+                        dayInputs.Add(dayName, (new List<string>(), new Dictionary<byte,byte>(),new List<SpecialActivityPrefs>()));
                     }
 
-                    var timeName = blockData.Cells[i + 1, 2].Text;
-                    daysAndTimes[dayName].Add(timeName);
+                    string timeName = blockData.Cells[i + 1, 2].Text;
+                    dayInputs[dayName].times.Add(timeName);
 
                     var lunchNum = blockData.Cells.Value2[i + 1, 3];
-                    if (lunchNum != 0) lunchNumToTimeIndex.Add((byte)lunchNum, i);
+                    if (lunchNum != 0) dayInputs[dayName].lunchNumToTimeIndex.Add((byte)lunchNum, (byte)(dayInputs[dayName].times.Count-1));
 
                     char openingCirclePref = blockData.Cells.Value2[i + 1, 4].ToString()[0];
                     char middleCirclePref = blockData.Cells.Value2[i + 1, 5].ToString()[0];
@@ -221,7 +219,7 @@ namespace CampScheduler
                     char openPref = blockData.Cells.Value2[i + 1, 8].ToString()[0];
                     string specialEntPrefs = blockData.Cells.Value2[i + 1, 9].ToString();
 
-                    specActPrefs[i] = new SpecialActivityPrefs(openingCirclePref, middleCirclePref, popsicleTimePref, closingCirclePref, openPref, specialEntPrefs);
+                    dayInputs[dayName].specActPrefs.Add(new SpecialActivityPrefs(openingCirclePref, middleCirclePref, popsicleTimePref, closingCirclePref, openPref, specialEntPrefs));
                 }
             }
             catch (Exception)
@@ -229,56 +227,71 @@ namespace CampScheduler
                 throw new Exception("Failed to parse blocks table; check for empty or invalid inputs");
             }
 
-            throw new NotImplementedException();
+            Dictionary<string, DayInfo> WeekInfo = new Dictionary<string, DayInfo>();
 
-            //var schedule = new WeekSchedule(blockData.Rows.Count, groups, daysAndTimes, lunchNumToTimeIndex, GradeToUnit, specActPrefs);
+            foreach(var dayInput in dayInputs)
+            {
+                var dayInfo = new DayInfo(dayInput.Key, dayInput.Value.times.ToArray(),dayInput.Value.specActPrefs.ToArray(),dayInput.Value.lunchNumToTimeIndex);
 
-            //try
-            //{
-            //    for (byte i = 0; i < activityData.Rows.Count; i++)
-            //    {
-            //        var name = activityData.Cells.Value2[i + 1, 1];
-            //        bool water = YNParse(activityData.Cells.Value2[i + 1, 2]);
-            //        bool overflow = YNParse(activityData.Cells.Value2[i + 1, 3]);
-            //        string numOfGroups = Convert.ToString(activityData.Cells.Value2[i + 1, 4]);
-            //        var onlyGrades = ParseGrades(activityData.Cells.Value2[i + 1, 5]);
-            //        var strikedGrades = ParseGrades(activityData.Cells.Value2[i + 1, 6]);
-            //        bool open = YNParse(activityData.Cells.Value2[i + 1, 7]);
-            //        bool isSpecialist = YNParse(activityData.Cells.Value2[i + 1, 8]);
-            //        schedule.AddActivity(name, water, overflow, numOfGroups.Trim(' ').Split(',').Select(n => byte.Parse(n.Trim(' '))).ToArray(), open, onlyGrades, strikedGrades, isSpecialist);
-            //    }
-            //}
-            //catch (Exception)
-            //{
-            //    throw new Exception("Failed to parse activities table; check for empty or invalid inputs");
-            //}
+                WeekInfo.Add(dayInput.Key, dayInfo);
+            }
 
-            //try
-            //{
-            //    for (byte i = 0; i < rulesData.Rows.Count; i++)
-            //    {
-            //        var groupIDs = schedule.ParseGroupOrGrade(rulesData.Cells.Value2[i + 1, 1]);
-            //        var actIds = schedule.ParseActivities(rulesData.Cells.Value2[i + 1, 2]);
-            //        var timeIndeces = schedule.ParseTimes(rulesData.Cells.Value2[i + 1, 3]);
-            //        schedule.AddRule(groupIDs, actIds, timeIndeces);
-            //    }
-            //}
-            //catch (Exception)
-            //{
-            //    throw new Exception("Failed to parse rules table; check for empty or invalid inputs");
-            //}
+            var schedule = new WeekSchedule(groups, WeekInfo, GradeToUnit);
+
+            try
+            {
+                for (byte i = 0; i < activityData.Rows.Count; i++)
+                {
+                    var name = activityData.Cells.Value2[i + 1, 1];
+                    bool water = YNParse(activityData.Cells.Value2[i + 1, 2]);
+                    bool overflow = YNParse(activityData.Cells.Value2[i + 1, 3]);
+                    string numOfGroups = Convert.ToString(activityData.Cells.Value2[i + 1, 4]);
+                    var onlyGrades = ParseGrades(activityData.Cells.Value2[i + 1, 5]);
+                    var strikedGrades = ParseGrades(activityData.Cells.Value2[i + 1, 6]);
+                    string[] open = schedule.ParseDays(activityData.Cells.Value2[i + 1, 7]);
+                    bool isSpecialist = YNParse(activityData.Cells.Value2[i + 1, 8]);
+                    schedule.AddActivity(name, water, overflow, numOfGroups.Trim(' ').Split(',').Select(n => byte.Parse(n.Trim(' '))).ToArray(), open, onlyGrades, strikedGrades, isSpecialist);
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to parse activities table; check for empty or invalid inputs");
+            }
+
+            try
+            {
+                for (byte i = 0; i < rulesData.Rows.Count; i++)
+                {
+                    var groupIDs = schedule.ParseGroupOrGrade(rulesData.Cells.Value2[i + 1, 1]);
+                    var actIds = schedule.ParseActivities(rulesData.Cells.Value2[i + 1, 2]);
+                    var days = schedule.ParseDays(rulesData.Cells.Value2[i + 1, 4]);
+
+                    var timeListInput = rulesData.Cells.Value2[i + 1, 3];
+
+                    byte[] timeIndeces;
+                    foreach (var day in days)
+                    {
+                        timeIndeces = schedule.ParseTimes(day, timeListInput);
+                        schedule.AddRule(day, groupIDs, actIds, timeIndeces);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to parse rules table; check for empty or invalid inputs");
+            }
 
 
-            //schedule.GenerateSchedule();
+            schedule.GenerateSchedule();
 
-            //GC.Collect();
-            //GC.WaitForPendingFinalizers();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
 
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
 
-            //return schedule;
+            return schedule;
         }
     }
 }
