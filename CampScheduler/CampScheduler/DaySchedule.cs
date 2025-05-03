@@ -25,6 +25,8 @@ namespace CampScheduler
 
         internal List<Rule> Rules { get; }
 
+        internal Dictionary<byte, List<byte>> OffBlockRules { get; }
+
         internal DaySchedule(Group[] groups, DayInfo dayInfo, Dictionary<Grade,byte> gradeToUnit) : base(groups, gradeToUnit)
         {
             ScheduleData = new string[dayInfo.Times.Length, groups.Length];
@@ -35,6 +37,7 @@ namespace CampScheduler
             DayInfo = dayInfo;
 
             Rules = new List<Rule>();
+            OffBlockRules = new Dictionary<byte, List<byte>>();
         }
 
         public void AddActivity(string name, bool waterActivity, bool overflow, byte[] numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike, bool specialist)
@@ -53,7 +56,13 @@ namespace CampScheduler
         
         public void AddRule(byte[] groupIDs, byte[] actIDs, byte[] timeIDs)
         {
-            Rules.Add(new Rule(groupIDs, actIDs, timeIDs));
+            if(groupIDs.Length == 0)
+            {
+                if (!OffBlockRules.ContainsKey(actIDs[0])) OffBlockRules.Add(actIDs[0], new List<byte>());
+
+                OffBlockRules[actIDs[0]].Add(timeIDs[0]); //only takes first activity and time
+            }
+            else Rules.Add(new Rule(groupIDs, actIDs, timeIDs));
         }
         
         public byte[] ParseActivities(string activityNamesInput)
@@ -139,7 +148,7 @@ namespace CampScheduler
                 {
                     return ScheduleActivityReturnCode.GradeStriked;
                 }  
-                if (!string.IsNullOrEmpty(ScheduleData[TimeIndex,groupID]))
+                if (!string.IsNullOrEmpty(ScheduleData[TimeIndex,groupID])) //&& !string.Equals(ScheduleData[TimeIndex,groupID], "Open Activity"))
                 {
                     return ScheduleActivityReturnCode.Overlapped;
                 }
@@ -158,15 +167,24 @@ namespace CampScheduler
             byte lunchNum;
             foreach (DayActivity wAct in WaterActivities)
             {
-                lunchNum = (byte)(Gen.Next(DayInfo.LunchNumToTimeIndex.Count) + 1);
-                if (IsBookedInBlock(wAct.Id, DayInfo.LunchNumToTimeIndex[lunchNum]))
+                if (OffBlockRules.TryGetValue(wAct.Id, out List<byte> offBlocks))
                 {
-                    lunchNum = (byte)((lunchNum + 1) % DayInfo.LunchNumToTimeIndex.Count);
+                    lunchNum = DayInfo.LunchNumToTimeIndex.FirstOrDefault(x => offBlocks.Contains(x.Value)).Key;
+                }
+                else
+                {
+                    lunchNum = (byte)(Gen.Next(DayInfo.LunchNumToTimeIndex.Count) + 1);
+                    if (IsBookedInBlock(wAct.Id, DayInfo.LunchNumToTimeIndex[lunchNum]))
+                    {
+                        lunchNum = (byte)((lunchNum + 1) % DayInfo.LunchNumToTimeIndex.Count);
+                    }
                 }
 
-                for (int i = 0; i < DayInfo.Times.Count(); i++)
+                for (byte i = 0; i < DayInfo.Times.Count(); i++)
                 {
-                    if (i == DayInfo.LunchNumToTimeIndex[lunchNum] && wAct.IsSpecialist) continue;
+                    if (i == DayInfo.LunchNumToTimeIndex[lunchNum] && wAct.IsSpecialist 
+                        || wAct.Open
+                        || OffBlockRules.ContainsKey(wAct.Id) && OffBlockRules[wAct.Id].Contains(i)) continue;
                     waterActivityTimesAvailable.Add((wAct.Id, i));
                 }
             }
@@ -248,7 +266,6 @@ namespace CampScheduler
                         //Activity failed to place, rotate to next possible activity 
                         if (ScheduleCode != ScheduleActivityReturnCode.Success)
                         {
-
                             var temp = waterActivityTimesAvailable[availableIndex];
                             waterActivityTimesAvailable.RemoveAt(availableIndex);
                             waterActivityTimesAvailable.Add(temp);

@@ -17,6 +17,7 @@ namespace CampScheduler
         {
             GenerateEmptyInputButton.Click += GenerateEmptyInputButton_Click;
             GenerateExampleInputButton.Click += GenerateExampleInputButton_Click;
+            GenerateExampleInput2Button.Click += GenerateExampleInput2Button_Click;
             GenerateEmptyWeekButton.Click += GenerateEmptyWeekButton_Click;
             GenerateExampleWeekButton.Click += GenerateExampleWeekButton_Click;
         }
@@ -35,7 +36,7 @@ namespace CampScheduler
             var exampleWorkbook = Globals.ThisAddIn.Application.Workbooks[exampleWorkbookIndex];
             
             exampleWorkbook.Windows[1].Visible = false;
-            ((Excel.Worksheet)exampleWorkbook.Worksheets[2]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
+            ((Excel.Worksheet)exampleWorkbook.Worksheets[1]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
 
             exampleWorkbook.Close(false);
         }
@@ -51,7 +52,23 @@ namespace CampScheduler
             var exampleWorkbook = Globals.ThisAddIn.Application.Workbooks[exampleWorkbookIndex];
 
             exampleWorkbook.Windows[1].Visible = false;
-            ((Excel.Worksheet)exampleWorkbook.Worksheets[1]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
+            ((Excel.Worksheet)exampleWorkbook.Worksheets[2]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
+
+            exampleWorkbook.Close(false);
+        }
+
+        private void GenerateExampleInput2Button_Click(object sender, RibbonControlEventArgs e)
+        {
+            var currentWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
+            //emptyInputSheet.Range["A1"].Value2 = "This is a generated example input for the scheduler!";
+
+            Globals.ThisAddIn.Application.Workbooks.Open(AppDomain.CurrentDomain.BaseDirectory + "CampSchedulerInputExamples.xlsx");
+
+            var exampleWorkbookIndex = Globals.ThisAddIn.Application.Workbooks.Count; //THIS IS NOT THREAD SAFE, PLEASE PROGRAMATICALLY OPEN ANY OTHER WORKBOOKS (luckily it should hopefully just crash and not harm data)
+            var exampleWorkbook = Globals.ThisAddIn.Application.Workbooks[exampleWorkbookIndex];
+
+            exampleWorkbook.Windows[1].Visible = false;
+            ((Excel.Worksheet)exampleWorkbook.Worksheets[3]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
 
             exampleWorkbook.Close(false);
         }
@@ -67,7 +84,7 @@ namespace CampScheduler
             var exampleWorkbook = Globals.ThisAddIn.Application.Workbooks[exampleWorkbookIndex];
 
             exampleWorkbook.Windows[1].Visible = false;
-            ((Excel.Worksheet)exampleWorkbook.Worksheets[2]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
+            ((Excel.Worksheet)exampleWorkbook.Worksheets[5]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
 
             exampleWorkbook.Close(false);
         }
@@ -83,7 +100,7 @@ namespace CampScheduler
             var exampleWorkbook = Globals.ThisAddIn.Application.Workbooks[exampleWorkbookIndex];
 
             exampleWorkbook.Windows[1].Visible = false;
-            ((Excel.Worksheet)exampleWorkbook.Worksheets[2]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
+            ((Excel.Worksheet)exampleWorkbook.Worksheets[4]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
 
             exampleWorkbook.Close(false);
         }
@@ -156,41 +173,41 @@ namespace CampScheduler
             while (inputSheet.Range["Z" + ++rulesBottom].Value2 != null) ;
             var rulesData = inputSheet.Range["Z3", "AC" + (rulesBottom - 1)];
 
-            var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            errorSheet.Range["A1"].Value2 = "Week Generation Not Available. Launching soon.";
+            //var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            //errorSheet.Range["A1"].Value2 = "Week Generation Not Available. Launching soon.";
 
-            //WeekSchedule schedule;
+            WeekSchedule schedule;
 
-            ////error handling commented out for testing purposes
-            ////try
-            ////{
-            //    schedule = SchedulerParser.GenerateWeekSchedule(blockData, activityData, groupData, rulesData);
-            ////}
-            ////catch (Exception ex)
-            ////{
-            ////    var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            ////    errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
-            ////    errorSheet.Range["A2"].Value2 = ex.Message;
-            ////    return;
-            ////}
-
-            //GC.Collect();
-            //GC.WaitForPendingFinalizers();
-
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(inputSheet);
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
-
-            //var outputRanges = new Excel.Range[schedule.NumOfDays];
-
-            //for(int i = 0; i < outputRanges.Length; i++)
+            //error handling commented out for testing purposes
+            //try
             //{
-            //    var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            //    outputRanges[i] = outputSheet.Range["A1", "Z100"];
+            schedule = SchedulerParser.GenerateWeekSchedule(blockData, activityData, groupData, rulesData);
             //}
-            
-            //schedule.OutputSchedule(outputRanges);
+            //catch (Exception ex)
+            //{
+            //    var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            //    errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
+            //    errorSheet.Range["A2"].Value2 = ex.Message;
+            //    return;
+            //}
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(inputSheet);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
+
+            var outputRanges = new Excel.Range[schedule.NumOfDays];
+
+            for (int i = 0; i < outputRanges.Length; i++)
+            {
+                var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+                outputRanges[i] = outputSheet.Range["A1", "Z100"];
+            }
+
+            schedule.OutputSchedule(outputRanges);
         }
 
         private void FormatOutputButton_Click(object sender, RibbonControlEventArgs e)

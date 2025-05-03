@@ -47,8 +47,7 @@ namespace CampScheduler
                 if (grade == Grade.NA)
                 {
                     byte groupID = (byte)Array.FindIndex(Groups, x => x.Name == groupOrGradeStringTrim);
-                    if (groupID == 255) throw new Exception();
-                    groupIds.Add(groupID);
+                    if (groupID != 255) groupIds.Add(groupID);
                     continue;
                 }
 

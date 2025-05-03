@@ -46,6 +46,7 @@
             this.GenerateWeekOutputButton = this.Factory.CreateRibbonButton();
             this.FormatOutputButton = this.Factory.CreateRibbonButton();
             this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
+            this.GenerateExampleInput2Button = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -69,6 +70,7 @@
             // 
             this.GenerateInputButton.Buttons.Add(this.GenerateEmptyInputButton);
             this.GenerateInputButton.Buttons.Add(this.GenerateExampleInputButton);
+            this.GenerateInputButton.Buttons.Add(this.GenerateExampleInput2Button);
             this.GenerateInputButton.Buttons.Add(this.GenerateEmptyWeekButton);
             this.GenerateInputButton.Buttons.Add(this.GenerateExampleWeekButton);
             this.GenerateInputButton.Label = "Generate Input File";
@@ -82,7 +84,7 @@
             // 
             // GenerateExampleInputButton
             // 
-            this.GenerateExampleInputButton.Label = "Example Day";
+            this.GenerateExampleInputButton.Label = "Example Day 1";
             this.GenerateExampleInputButton.Name = "GenerateExampleInputButton";
             // 
             // GenerateEmptyWeekButton
@@ -125,6 +127,11 @@
             // 
             this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
             // 
+            // GenerateExampleInput2Button
+            // 
+            this.GenerateExampleInput2Button.Label = "Example Day 2";
+            this.GenerateExampleInput2Button.Name = "GenerateExampleInput2Button";
+            // 
             // SchedulerRibbon
             // 
             this.Name = "SchedulerRibbon";
@@ -155,6 +162,7 @@
         private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateExampleWeekButton;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton GenerateWeekOutputButton;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton FormatOutputButton;
+        private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateExampleInput2Button;
     }
 
     partial class ThisRibbonCollection
