@@ -164,14 +164,18 @@ namespace CampScheduler
         private void ScheduleWaterActivities()
         {
             var waterActivityTimesAvailable = new List<(byte, int)>();
-            byte lunchNum;
+            byte lunchNum = 0;
             foreach (DayActivity wAct in WaterActivities)
             {
-                if (OffBlockRules.TryGetValue(wAct.Id, out List<byte> offBlocks))
+                bool canHaveLunchRule = OffBlockRules.TryGetValue(wAct.Id, out List<byte> offBlocks);
+                if (canHaveLunchRule)
                 {
                     lunchNum = DayInfo.LunchNumToTimeIndex.FirstOrDefault(x => offBlocks.Contains(x.Value)).Key;
+
+                    if (lunchNum == 0) canHaveLunchRule = false;
                 }
-                else
+
+                if(!canHaveLunchRule)
                 {
                     lunchNum = (byte)(Gen.Next(DayInfo.LunchNumToTimeIndex.Count) + 1);
                     if (IsBookedInBlock(wAct.Id, DayInfo.LunchNumToTimeIndex[lunchNum]))
@@ -355,7 +359,16 @@ namespace CampScheduler
             {
                 LunchNumsCount[i] = (int)Math.Round(LunchNumsCount[i] / numOfRegGroups * NumOfSpecialists);
             }
-            LunchNumsCount[LunchNumsCount.Length - 1]++;
+            LunchNumsCount[LunchNumsCount.Length - 1]++; //prevent rounding error
+
+            //account for off block rules in selecting lunch
+            //foreach(var rule in OffBlockRules.Keys)
+            //{
+            //    if (Activities[rule.Key].IsSpecialist && )
+            //    {
+
+            //    }
+            //}
 
             foreach (byte ActId in new List<int>(Enumerable.ToList(Enumerable.Range(0, Activities.Count)).OrderBy(_ => Gen.Next())))
             {
@@ -372,7 +385,7 @@ namespace CampScheduler
                 {
                     //randomly choose lunch for specialist based off of lunch counts
                     byte currentLunchNum = 1;
-                    
+
                     while(LunchNumsCount[currentLunchNum - 1] == 0 || IsBookedInBlock(ActId, DayInfo.LunchNumToTimeIndex[currentLunchNum]))
                     {
                         currentLunchNum = (byte)(currentLunchNum % DayInfo.LunchNumToTimeIndex.Count + 1);

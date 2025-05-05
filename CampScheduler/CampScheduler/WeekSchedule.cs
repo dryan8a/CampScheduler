@@ -29,6 +29,8 @@ namespace CampScheduler
 
         internal Dictionary<string,List<Rule>> Rules {get;}
 
+        internal Dictionary<int, List<byte>> OffBlockRules { get; }
+
         internal WeekSchedule(Group[] groups, Dictionary<string,DayInfo> weekInfo, Dictionary<Grade, byte> gradeToUnit) : base(groups, gradeToUnit)
         {
             ScheduleData = new Dictionary<string, string[,]>();
@@ -43,6 +45,8 @@ namespace CampScheduler
             WeekInfo = weekInfo;
 
             Rules = new Dictionary<string, List<Rule>>();
+
+            OffBlockRules = new Dictionary<int, List<byte>>(); //hash ("day",ActId)
         }
 
         public void AddActivity(string name, bool waterActivity, bool overflow, byte[] numOfGroups, string[] open, Grade[] gradeOnly, Grade[] gradeStrike, bool specialist)
@@ -61,9 +65,20 @@ namespace CampScheduler
 
         public void AddRule(string day, byte[] groupIDs, byte[] actIDs, byte[] timeIDs)
         {
-            if (!Rules.ContainsKey(day)) Rules.Add(day, new List<Rule>());
+            if (groupIDs.Length == 0)
+            {
+                var key = (day, actIDs[0]).GetHashCode();
 
-            Rules[day].Add(new Rule(groupIDs, actIDs, timeIDs));
+                if (!OffBlockRules.ContainsKey(key)) OffBlockRules.Add(key, new List<byte>());
+
+                OffBlockRules[key].Add(timeIDs[0]); //only takes first activity and time
+            }
+            else
+            {
+                if (!Rules.ContainsKey(day)) Rules.Add(day, new List<Rule>());
+
+                Rules[day].Add(new Rule(groupIDs, actIDs, timeIDs));
+            }
         }
 
         public string[] ParseDays(string dayListInput)
@@ -146,166 +161,182 @@ namespace CampScheduler
             return false;
         }
 
-        //private ScheduleActivityReturnCode CanScheduleWater(byte wActID, int TimeIndex, byte startGroupID, int numOfGroupsIndex)
-        //{
-        //    int endGroupID = startGroupID + Activities[wActID].GetNumOfGroups(numOfGroupsIndex);
-        //    for (byte groupID = startGroupID; groupID < endGroupID; groupID++)
-        //    {
-        //        if (groupID >= Groups.Count()) break;
-        //        if (Activities[wActID].GradeOnly.Length > 0 && !Activities[wActID].GradeOnly.Contains(Groups[groupID].Grade))
-        //        {
-        //            return ScheduleActivityReturnCode.NotGradeOnly;
-        //        }
-        //        if (Activities[wActID].GradeStrike.Length > 0 && Activities[wActID].GradeStrike.Contains(Groups[groupID].Grade))
-        //        {
-        //            return ScheduleActivityReturnCode.GradeStriked;
-        //        }
-        //        if (!string.IsNullOrEmpty(ScheduleData[TimeIndex, groupID]))
-        //        {
-        //            return ScheduleActivityReturnCode.Overlapped;
-        //        }
-        //        if (Activities[wActID].Open && DayInfo.SpecialActivityPrefs[TimeIndex].OpenPref != 'n')
-        //        {
-        //            return ScheduleActivityReturnCode.BookedOpen;
-        //        }
-        //        if (IsBookedInBlock(wActID, TimeIndex) || GroupIDsWithRuleWActs.Contains(groupID)) return ScheduleActivityReturnCode.Duplicate;
-        //    }
-        //    return ScheduleActivityReturnCode.Success;
-        //}
+        private ScheduleActivityReturnCode CanScheduleWater(byte wActID, string day, int TimeIndex, byte startGroupID, int numOfGroupsIndex)
+        {
+            int endGroupID = startGroupID + Activities[wActID].GetNumOfGroups(numOfGroupsIndex);
+            for (byte groupID = startGroupID; groupID < endGroupID; groupID++)
+            {
+                if (groupID >= Groups.Count()) break;
+                if (Activities[wActID].GradeOnly.Length > 0 && !Activities[wActID].GradeOnly.Contains(Groups[groupID].Grade))
+                {
+                    return ScheduleActivityReturnCode.NotGradeOnly;
+                }
+                if (Activities[wActID].GradeStrike.Length > 0 && Activities[wActID].GradeStrike.Contains(Groups[groupID].Grade))
+                {
+                    return ScheduleActivityReturnCode.GradeStriked;
+                }
+                if (!string.IsNullOrEmpty(ScheduleData[day][TimeIndex, groupID])) //&& !string.Equals(ScheduleData[TimeIndex,groupID], "Open Activity"))
+                {
+                    return ScheduleActivityReturnCode.Overlapped;
+                }
+                if (Activities[wActID].Open.Contains(day) && WeekInfo[day].SpecialActivityPrefs[TimeIndex].OpenPref != 'n')
+                {
+                    return ScheduleActivityReturnCode.BookedOpen;
+                }
+                if (IsBookedInBlock(wActID, day, TimeIndex) || GroupIDsWithRuleWActs.Contains(groupID)) return ScheduleActivityReturnCode.Duplicate;
+            }
+            return ScheduleActivityReturnCode.Success;
+        }
 
-        //private void ScheduleWaterActivities()
-        //{
-        //    var waterActivityTimesAvailable = new List<(byte, int)>();
-        //    byte lunchNum;
-        //    foreach (DayActivity wAct in WaterActivities)
-        //    {
-        //        lunchNum = (byte)(Gen.Next(DayInfo.LunchNumToTimeIndex.Count) + 1);
-        //        if (IsBookedInBlock(wAct.Id, DayInfo.LunchNumToTimeIndex[lunchNum]))
-        //        {
-        //            lunchNum = (byte)((lunchNum + 1) % DayInfo.LunchNumToTimeIndex.Count);
-        //        }
+        private void ScheduleWaterActivities(string day)
+        {
+            var waterActivityTimesAvailable = new List<(byte, int)>();
+            byte lunchNum;
+            foreach (WeekActivity wAct in WaterActivities)
+            {
+                if (OffBlockRules.TryGetValue((day, wAct.Id).GetHashCode(), out List<byte> offBlocks))
+                {
+                    lunchNum = WeekInfo[day].LunchNumToTimeIndex.FirstOrDefault(x => offBlocks.Contains(x.Value)).Key;
+                }
+                else
+                {
+                    lunchNum = (byte)(Gen.Next(WeekInfo[day].LunchNumToTimeIndex.Count) + 1);
+                    if (IsBookedInBlock(wAct.Id, day, WeekInfo[day].LunchNumToTimeIndex[lunchNum]))
+                    {
+                        lunchNum = (byte)((lunchNum + 1) % WeekInfo[day].LunchNumToTimeIndex.Count);
+                    }
+                }
 
-        //        for (int i = 0; i < DayInfo.Times.Count(); i++)
-        //        {
-        //            if (i == DayInfo.LunchNumToTimeIndex[lunchNum] && wAct.IsSpecialist) continue;
-        //            waterActivityTimesAvailable.Add((wAct.Id, i));
-        //        }
-        //    }
-        //    waterActivityTimesAvailable = new List<(byte, int)>(waterActivityTimesAvailable.OrderBy(_ => Gen.Next()));
+                for (byte i = 0; i < WeekInfo[day].Times.Count(); i++)
+                {
+                    if (i == WeekInfo[day].LunchNumToTimeIndex[lunchNum] && wAct.IsSpecialist
+                        || wAct.Open.Contains(day)
+                        || OffBlockRules.ContainsKey((day,wAct.Id).GetHashCode()) && OffBlockRules[(day, wAct.Id).GetHashCode()].Contains(i)) continue;
+                    waterActivityTimesAvailable.Add((wAct.Id, i));
+                }
+            }
+            waterActivityTimesAvailable = new List<(byte, int)>(waterActivityTimesAvailable.OrderBy(_ => Gen.Next()));
 
-        //    int WActNumOfGroupCombos = WActMaxNumofGroups * waterActivityTimesAvailable.Count;
+            int WActNumOfGroupCombos = WActMaxNumofGroups * waterActivityTimesAvailable.Count;
 
-        //    var UnitOpen = new[] { false, false };
-        //    foreach (var specActPref in DayInfo.SpecialActivityPrefs)
-        //    {
-        //        switch (specActPref.OpenPref)
-        //        {
-        //            case 'b':
-        //                UnitOpen[0] = true;
-        //                UnitOpen[1] = true;
-        //                break;
-        //            case '1':
-        //                UnitOpen[0] = true;
-        //                break;
-        //            case '2':
-        //                UnitOpen[1] = true;
-        //                break;
-        //        }
-        //    }
+            var UnitOpen = new[] { false, false };
+            foreach (var specActPref in WeekInfo[day].SpecialActivityPrefs)
+            {
+                switch (specActPref.OpenPref)
+                {
+                    case 'b':
+                        UnitOpen[0] = true;
+                        UnitOpen[1] = true;
+                        break;
+                    case '1':
+                        UnitOpen[0] = true;
+                        break;
+                    case '2':
+                        UnitOpen[1] = true;
+                        break;
+                }
+            }
 
-        //    int failCount = 0;
-        //    var ScheduledWaters = new List<(int TimeIndex, byte groupId, string ActName)>();
-        //    while (true)
-        //    {
-        //        ScheduledWaters.Clear();
-        //        bool failed = false;
+            int failCount = 0;
+            var ScheduledWaters = new List<(int TimeIndex, byte groupId, string ActName)>();
+            while (true)
+            {
+                ScheduledWaters.Clear();
+                bool failed = false;
 
-        //        int minGroupsIndex = Math.DivRem(failCount, waterActivityTimesAvailable.Count(), out int numOfMaxGroupsIndex);
+                int minGroupsIndex = Math.DivRem(failCount, waterActivityTimesAvailable.Count(), out int numOfMaxGroupsIndex);
 
-        //        for (byte groupID = 0, availableIndex = 0; ; availableIndex++)
-        //        {
-        //            while (groupID < Groups.Length && UnitOpen[Groups[groupID].Unit - 1]) groupID++;
+                for (byte groupID = 0, availableIndex = 0; ; availableIndex++)
+                {
+                    while (groupID < Groups.Length && UnitOpen[Groups[groupID].Unit - 1]) groupID++;
 
-        //            if (groupID >= Groups.Length) break;
+                    if (groupID >= Groups.Length) break;
 
-        //            if (GroupIDsWithRuleWActs.Contains(groupID))
-        //            {
-        //                groupID++;
-        //                availableIndex--;
-        //                continue;
-        //            }
+                    if (GroupIDsWithRuleWActs.Contains(groupID))
+                    {
+                        groupID++;
+                        availableIndex--;
+                        continue;
+                    }
 
-        //            if (availableIndex == waterActivityTimesAvailable.Count)
-        //            {
-        //                failCount++;
-        //                failed = true;
-        //                break;
-        //            }
+                    if (availableIndex == waterActivityTimesAvailable.Count)
+                    {
+                        failCount++;
+                        failed = true;
+                        break;
+                    }
 
-        //            //int numOfGroupsIndex = (int)Math.Ceiling((float)(failCount < availableIndex ? 0 : failCount - availableIndex) / waterActivityTimesAvailable.Count());
-        //            int numOfGroupsIndex = minGroupsIndex;
-        //            if (Gen.Next(waterActivityTimesAvailable.Count() - availableIndex) < numOfMaxGroupsIndex)
-        //            {
-        //                numOfGroupsIndex++;
-        //                numOfMaxGroupsIndex--;
-        //            }
+                    //int numOfGroupsIndex = (int)Math.Ceiling((float)(failCount < availableIndex ? 0 : failCount - availableIndex) / waterActivityTimesAvailable.Count());
+                    int numOfGroupsIndex = minGroupsIndex;
+                    if (Gen.Next(waterActivityTimesAvailable.Count() - availableIndex) < numOfMaxGroupsIndex)
+                    {
+                        numOfGroupsIndex++;
+                        numOfMaxGroupsIndex--;
+                    }
 
-        //            (byte wActID, int TimeIndex) = (0, 0);
-        //            //(byte firstActID, int FirstTime) = waterActivityTimesAvailable[availableIndex];
-        //            for (int i = 0; ; i++)
-        //            {
-        //                (wActID, TimeIndex) = waterActivityTimesAvailable[availableIndex];
+                    (byte wActID, int TimeIndex) = (0, 0);
+                    //(byte firstActID, int FirstTime) = waterActivityTimesAvailable[availableIndex];
+                    for (int i = 0; ; i++)
+                    {
+                        (wActID, TimeIndex) = waterActivityTimesAvailable[availableIndex];
 
-        //                var ScheduleCode = CanScheduleWater(wActID, TimeIndex, groupID, numOfGroupsIndex);
+                        var ScheduleCode = CanScheduleWater(wActID, day, TimeIndex, groupID, numOfGroupsIndex);
 
-        //                //Activity overlapped when it didn't need to
-        //                if (ScheduleCode == ScheduleActivityReturnCode.Overlapped && numOfGroupsIndex > minGroupsIndex && numOfMaxGroupsIndex + 1 < waterActivityTimesAvailable.Count() - availableIndex)
-        //                {
-        //                    numOfMaxGroupsIndex++;
-        //                    numOfGroupsIndex = minGroupsIndex;
-        //                    ScheduleCode = CanScheduleWater(wActID, TimeIndex, groupID, numOfGroupsIndex);
-        //                }
+                        //Activity overlapped when it didn't need to
+                        if (ScheduleCode == ScheduleActivityReturnCode.Overlapped && numOfGroupsIndex > minGroupsIndex && numOfMaxGroupsIndex + 1 < waterActivityTimesAvailable.Count() - availableIndex)
+                        {
+                            numOfMaxGroupsIndex++;
+                            numOfGroupsIndex = minGroupsIndex;
+                            ScheduleCode = CanScheduleWater(wActID, day, TimeIndex, groupID, numOfGroupsIndex);
+                        }
 
-        //                //Activity failed to place, rotate to next possible activity 
-        //                if (ScheduleCode != ScheduleActivityReturnCode.Success)
-        //                {
+                        //Activity failed to place, rotate to next possible activity 
+                        if (ScheduleCode != ScheduleActivityReturnCode.Success)
+                        {
+                            var temp = waterActivityTimesAvailable[availableIndex];
+                            waterActivityTimesAvailable.RemoveAt(availableIndex);
+                            waterActivityTimesAvailable.Add(temp);
+                            if (i >= waterActivityTimesAvailable.Count - availableIndex - 1)
+                            {
+                                failed = true;
+                                break;
+                            }
+                            continue;
+                        }
+                        break;
+                    }
+                    if (failed)
+                    {
+                        failCount++;
+                        break;
+                    }
 
-        //                    var temp = waterActivityTimesAvailable[availableIndex];
-        //                    waterActivityTimesAvailable.RemoveAt(availableIndex);
-        //                    waterActivityTimesAvailable.Add(temp);
-        //                    if (i >= waterActivityTimesAvailable.Count - availableIndex - 1)
-        //                    {
-        //                        failed = true;
-        //                        break;
-        //                    }
-        //                    continue;
-        //                }
-        //                break;
-        //            }
-        //            if (failed)
-        //            {
-        //                failCount++;
-        //                break;
-        //            }
+                    for (int i = 0; i < Activities[wActID].GetNumOfGroups(numOfGroupsIndex); i++)
+                    {
+                        ScheduledWaters.Add((TimeIndex, groupID, Activities[wActID].Name));
+                        groupID++;
+                        if (groupID >= Groups.Length) break;
+                    }
+                }
+                if (failCount > WActNumOfGroupCombos) throw new Exception($"Couldn't schedule water activities for all groups; try freeing up {day} schedule");
+                if (!failed)
+                {
+                    break;
+                }
+            }
+            foreach (var scheduledWater in ScheduledWaters)
+            {
+                ScheduleData[day][scheduledWater.TimeIndex, scheduledWater.groupId] = scheduledWater.ActName;
+            }
+        }
 
-        //            for (int i = 0; i < Activities[wActID].GetNumOfGroups(numOfGroupsIndex); i++)
-        //            {
-        //                ScheduledWaters.Add((TimeIndex, groupID, Activities[wActID].Name));
-        //                groupID++;
-        //                if (groupID >= Groups.Length) break;
-        //            }
-        //        }
-        //        if (failCount > WActNumOfGroupCombos) throw new Exception("Couldn't schedule water activities for all groups; try freeing up schedule");
-        //        if (!failed)
-        //        {
-        //            break;
-        //        }
-        //    }
-        //    foreach (var scheduledWater in ScheduledWaters)
-        //    {
-        //        ScheduleData[scheduledWater.TimeIndex, scheduledWater.groupId] = scheduledWater.ActName;
-        //    }
-        //}
+        private void ScheduleWaterActivities()
+        {
+            foreach(var day in WeekInfo.Keys)
+            {
+                ScheduleWaterActivities(day);
+            }
+        }
 
         //private ScheduleActivityReturnCode CanScheduleRegular(byte ActID, int TimeIndex, byte startGroupID)
         //{
@@ -506,7 +537,7 @@ namespace CampScheduler
             }
 
             //Water Scheduling
-            //ScheduleWaterActivities();
+            ScheduleWaterActivities();
 
             //Regular Activity Scheduling
             //ScheduleRegularActivities(LunchNumsCount);
