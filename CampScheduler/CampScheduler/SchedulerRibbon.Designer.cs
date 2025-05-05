@@ -39,6 +39,7 @@
             this.GenerateInputButton = this.Factory.CreateRibbonDropDown();
             this.GenerateEmptyInputButton = this.Factory.CreateRibbonButton();
             this.GenerateExampleInputButton = this.Factory.CreateRibbonButton();
+            this.GenerateExampleInput2Button = this.Factory.CreateRibbonButton();
             this.GenerateEmptyWeekButton = this.Factory.CreateRibbonButton();
             this.GenerateExampleWeekButton = this.Factory.CreateRibbonButton();
             this.group2 = this.Factory.CreateRibbonGroup();
@@ -46,7 +47,6 @@
             this.GenerateWeekOutputButton = this.Factory.CreateRibbonButton();
             this.FormatOutputButton = this.Factory.CreateRibbonButton();
             this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
-            this.GenerateExampleInput2Button = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -87,6 +87,11 @@
             this.GenerateExampleInputButton.Label = "Example Day 1";
             this.GenerateExampleInputButton.Name = "GenerateExampleInputButton";
             // 
+            // GenerateExampleInput2Button
+            // 
+            this.GenerateExampleInput2Button.Label = "Example Day 2";
+            this.GenerateExampleInput2Button.Name = "GenerateExampleInput2Button";
+            // 
             // GenerateEmptyWeekButton
             // 
             this.GenerateEmptyWeekButton.Label = "Empty Week";
@@ -126,11 +131,6 @@
             // OpenInputFileDialog
             // 
             this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
-            // 
-            // GenerateExampleInput2Button
-            // 
-            this.GenerateExampleInput2Button.Label = "Example Day 2";
-            this.GenerateExampleInput2Button.Name = "GenerateExampleInput2Button";
             // 
             // SchedulerRibbon
             // 

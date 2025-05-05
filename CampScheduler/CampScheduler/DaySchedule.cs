@@ -329,6 +329,10 @@ namespace CampScheduler
                 {
                     return ScheduleActivityReturnCode.NotGradeOnly;
                 }
+                if(OffBlockRules.TryGetValue(ActID, out List<byte> offBlocks) && offBlocks.Contains((byte)TimeIndex))
+                {
+                    return ScheduleActivityReturnCode.OffBlock;
+                }
                 if (Act.Open && DayInfo.SpecialActivityPrefs[TimeIndex].OpenPref != 'n')
                 {
                     return ScheduleActivityReturnCode.BookedOpen;
@@ -362,13 +366,19 @@ namespace CampScheduler
             LunchNumsCount[LunchNumsCount.Length - 1]++; //prevent rounding error
 
             //account for off block rules in selecting lunch
-            //foreach(var rule in OffBlockRules.Keys)
-            //{
-            //    if (Activities[rule.Key].IsSpecialist && )
-            //    {
+            foreach (var actId in OffBlockRules.Keys)
+            {
+                if (Activities[actId].IsSpecialist)
+                {
+                    var lunchNum = DayInfo.LunchNumToTimeIndex.FirstOrDefault(x => OffBlockRules[actId].Contains(x.Value)).Key;
 
-            //    }
-            //}
+                    if (lunchNum == 0) continue;
+
+                    LunchNumsCount[lunchNum - 1]--;
+
+                    BookableActivityToLunchNum.Add(actId, lunchNum);
+                }
+            }
 
             foreach (byte ActId in new List<int>(Enumerable.ToList(Enumerable.Range(0, Activities.Count)).OrderBy(_ => Gen.Next())))
             {
@@ -381,7 +391,7 @@ namespace CampScheduler
 
                 BookableActInds.Add(ActId);
 
-                if (Activities[ActId].IsSpecialist)
+                if (Activities[ActId].IsSpecialist && !BookableActivityToLunchNum.ContainsKey(ActId))
                 {
                     //randomly choose lunch for specialist based off of lunch counts
                     byte currentLunchNum = 1;

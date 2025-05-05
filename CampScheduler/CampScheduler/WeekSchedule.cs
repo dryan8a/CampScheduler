@@ -191,14 +191,18 @@ namespace CampScheduler
         private void ScheduleWaterActivities(string day)
         {
             var waterActivityTimesAvailable = new List<(byte, int)>();
-            byte lunchNum;
+            byte lunchNum = 0;
             foreach (WeekActivity wAct in WaterActivities)
             {
-                if (OffBlockRules.TryGetValue((day, wAct.Id).GetHashCode(), out List<byte> offBlocks))
+                bool canHaveLunchRule = OffBlockRules.TryGetValue((day,wAct.Id).GetHashCode(), out List<byte> offBlocks);
+                if (canHaveLunchRule)
                 {
                     lunchNum = WeekInfo[day].LunchNumToTimeIndex.FirstOrDefault(x => offBlocks.Contains(x.Value)).Key;
+
+                    if (lunchNum == 0) canHaveLunchRule = false;
                 }
-                else
+
+                if (!canHaveLunchRule)
                 {
                     lunchNum = (byte)(Gen.Next(WeekInfo[day].LunchNumToTimeIndex.Count) + 1);
                     if (IsBookedInBlock(wAct.Id, day, WeekInfo[day].LunchNumToTimeIndex[lunchNum]))

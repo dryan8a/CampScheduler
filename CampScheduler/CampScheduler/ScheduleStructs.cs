@@ -163,6 +163,7 @@ namespace CampScheduler
         Overlapped,
         Duplicate,
         BookedOpen,
-        SpecialGroup
+        SpecialGroup,
+        OffBlock
     }
 }
