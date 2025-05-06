@@ -163,6 +163,7 @@ namespace CampScheduler
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(rulesData);
 
             return schedule;
         }
@@ -290,6 +291,7 @@ namespace CampScheduler
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(rulesData);
 
             return schedule;
         }

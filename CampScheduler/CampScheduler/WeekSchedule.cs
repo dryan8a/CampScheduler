@@ -547,39 +547,53 @@ namespace CampScheduler
             //ScheduleRegularActivities(LunchNumsCount);
         }
 
-        public void OutputSchedule(Excel.Range[] outputRanges)
+        public void OutputSchedule(Excel.Worksheet[] outputSheets, string[] takenSheetNames)
         {
             int i = 0;
             foreach (var dayInfo in WeekInfo.Values)
             {
-                outputRanges[i].Range["A1", (char)('A' + dayInfo.Times.Length) + "1"].Merge();
-                outputRanges[i].Cells[1, 1].Value2 = dayInfo.DayName;
+                var outputRange = outputSheets[i].Range["A1", "Z100"];
+
+                outputRange.Range["A1", (char)('A' + dayInfo.Times.Length) + "1"].Merge();
+                outputRange.Cells[1, 1].Value2 = dayInfo.DayName;
+
+                string baseName = $"{dayInfo.DayName} Output";
+                string currentName = baseName;
+                for (int j = 0; ; j++)
+                {
+                    currentName = j == 0 ? baseName : baseName + $" ({j})";
+                    if (!takenSheetNames.Contains(currentName)) break;
+                }
+                outputSheets[i].Name = currentName;
 
                 for (int column = 0; column < dayInfo.Times.Length; column++)
                 {
-                    outputRanges[i].Cells[2, column + 2].Value2 = dayInfo.Times[column];
-                    outputRanges[i].Cells[3, column + 2].Value2 = column + 1;
+                    outputRange.Cells[2, column + 2].Value2 = dayInfo.Times[column];
+                    outputRange.Cells[3, column + 2].Value2 = column + 1;
                 }
 
                 for (int row = 0; row < Groups.Length; row++)
                 {
-                    outputRanges[i].Cells[row + 4, 1].Value2 = Groups[row].Name;
+                    outputRange.Cells[row + 4, 1].Value2 = Groups[row].Name;
                 }
 
                 for (int row = 0; row < Groups.Length; row++)
                 {
                     for (int column = 0; column < dayInfo.Times.Length; column++)
                     {
-                        outputRanges[i].Cells[row + 4, column + 2].Value2 = ScheduleData[dayInfo.DayName][column, row];
+                        outputRange.Cells[row + 4, column + 2].Value2 = ScheduleData[dayInfo.DayName][column, row];
                     }
                 }
 
-                outputRanges[i].Columns.AutoFit();
-                outputRanges[i].Cells.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
-                outputRanges[i].Cells.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
+                outputRange.Columns.AutoFit();
+                outputRange.Cells.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                outputRange.Cells.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
+
+                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputRange);
 
                 i++;
             }
+            //System.Runtime.InteropServices.Marshal.ReleaseComObject(outputSheets);
         }
     }
 }

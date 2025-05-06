@@ -526,10 +526,21 @@ namespace CampScheduler
             ScheduleRegularActivities(LunchNumsCount);
         }
 
-        public void OutputSchedule(Excel.Range outputRange)
+        public void OutputSchedule(Excel.Worksheet outputSheet, string[] takenSheetNames)
         {
+            var outputRange = outputSheet.Range["A1", "Z100"];
+
             outputRange.Range["A1", (char)('A' + DayInfo.Times.Length) + "1"].Merge();
             outputRange.Cells[1, 1].Value2 = DayInfo.DayName;
+
+            string baseName = $"{DayInfo.DayName} Output";
+            string currentName = baseName;
+            for(int i = 0; ; i++)
+            {
+                currentName = i == 0 ? baseName : baseName + $" ({i})";
+                if (!takenSheetNames.Contains(currentName)) break;
+            }
+            outputSheet.Name = currentName;
 
             for(int column = 0;column < DayInfo.Times.Length;column++)
             {
@@ -553,6 +564,9 @@ namespace CampScheduler
             outputRange.Columns.AutoFit();
             outputRange.Cells.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
             outputRange.Cells.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
+
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputRange);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
         }
     }
 }

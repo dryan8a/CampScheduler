@@ -8,6 +8,7 @@ using Excel = Microsoft.Office.Interop.Excel;
 using Office = Microsoft.Office.Core;
 using Microsoft.Office.Tools.Excel;
 using Microsoft.Office.Interop.Excel;
+using System.Windows.Forms.VisualStyles;
 
 namespace CampScheduler
 {
@@ -105,6 +106,15 @@ namespace CampScheduler
             exampleWorkbook.Close(false);
         }
 
+        private string[] GetWorksheetsNames()
+        {
+            var workSheetNames = new string[Globals.ThisAddIn.Application.ActiveWorkbook.Worksheets.Count];
+            for(int i = 1; i <= workSheetNames.Length; i++)
+            {
+                workSheetNames[i-1] = Globals.ThisAddIn.Application.ActiveWorkbook.Worksheets[i].Name;
+            }
+            return workSheetNames;
+        }
 
         private void GenerateDayOutputButton_Click(object sender, RibbonControlEventArgs e)
         {
@@ -148,9 +158,14 @@ namespace CampScheduler
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
 
+            var takenNames = GetWorksheetsNames();
 
             var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            schedule.OutputSchedule(outputSheet.Range["A1","Z100"]);
+            schedule.OutputSchedule(outputSheet, takenNames);
+
+
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
+
         }
 
         private void GenerateWeekOutputButton_Click(object sender, RibbonControlEventArgs e)
@@ -199,15 +214,16 @@ namespace CampScheduler
             //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
             //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
 
-            //var outputRanges = new Excel.Range[schedule.NumOfDays];
+            //var outputSheets = new Excel.Worksheet[schedule.NumOfDays];
 
-            //for (int i = 0; i < outputRanges.Length; i++)
+            //for (int i = 0; i < outputSheets.Length; i++)
             //{
-            //    var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            //    outputRanges[i] = outputSheet.Range["A1", "Z100"];
+            //    outputSheets[i] = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
             //}
 
-            //schedule.OutputSchedule(outputRanges);
+            //var takenNames = GetWorksheetsNames();
+
+            //schedule.OutputSchedule(outputSheets, takenNames);
         }
 
         private void FormatOutputButton_Click(object sender, RibbonControlEventArgs e)
