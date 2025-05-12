@@ -188,42 +188,42 @@ namespace CampScheduler
             while (inputSheet.Range["Z" + ++rulesBottom].Value2 != null) ;
             var rulesData = inputSheet.Range["Z3", "AC" + (rulesBottom - 1)];
 
-            var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            errorSheet.Range["A1"].Value2 = "Week Generation Not Available. Launching soon.";
+            //var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            //errorSheet.Range["A1"].Value2 = "Week Generation Not Available. Launching soon.";
 
-            //WeekSchedule schedule;
+            WeekSchedule schedule;
 
-            ////error handling commented out for testing purposes
-            ////try
-            ////{
-            //schedule = SchedulerParser.GenerateWeekSchedule(blockData, activityData, groupData, rulesData);
-            ////}
-            ////catch (Exception ex)
-            ////{
-            ////    var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            ////    errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
-            ////    errorSheet.Range["A2"].Value2 = ex.Message;
-            ////    return;
-            ////}
-
-            //GC.Collect();
-            //GC.WaitForPendingFinalizers();
-
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(inputSheet);
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
-            //System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
-
-            //var outputSheets = new Excel.Worksheet[schedule.NumOfDays];
-
-            //for (int i = 0; i < outputSheets.Length; i++)
+            //error handling commented out for testing purposes
+            //try
             //{
-            //    outputSheets[i] = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            schedule = SchedulerParser.GenerateWeekSchedule(blockData, activityData, groupData, rulesData);
+            //}
+            //catch (Exception ex)
+            //{
+            //    var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            //    errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
+            //    errorSheet.Range["A2"].Value2 = ex.Message;
+            //    return;
             //}
 
-            //var takenNames = GetWorksheetsNames();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
 
-            //schedule.OutputSchedule(outputSheets, takenNames);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(inputSheet);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
+
+            var outputSheets = new Excel.Worksheet[schedule.NumOfDays];
+
+            for (int i = 0; i < outputSheets.Length; i++)
+            {
+                outputSheets[i] = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            }
+
+            var takenNames = GetWorksheetsNames();
+
+            schedule.OutputSchedule(outputSheets, takenNames);
         }
 
         private void FormatOutputButton_Click(object sender, RibbonControlEventArgs e)

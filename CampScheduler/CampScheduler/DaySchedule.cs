@@ -468,7 +468,7 @@ namespace CampScheduler
                         {
                             ScheduleData[blockIndex, group.RowNum + i] = currentAct.Name;
                         }
-                        currentBookableActIndInd += currentAct.NumofGroups[0];
+                        currentBookableActIndInd++;
                     }
                 }
             }
