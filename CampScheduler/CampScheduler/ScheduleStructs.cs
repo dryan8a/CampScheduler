@@ -96,6 +96,8 @@ namespace CampScheduler
             RowNum = rowNum;
             Name = name;
             Grade = grade;
+
+            if (unit < 1 || unit > 2) throw new Exception("Invalid Unit Number entered; Group must be in Unit 1 or 2");
             Unit = unit;
             SpecialGroup = specialGroup;
             LunchNum = lunchNum;

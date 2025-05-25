@@ -9,6 +9,7 @@ using Office = Microsoft.Office.Core;
 using Microsoft.Office.Tools.Excel;
 using Microsoft.Office.Interop.Excel;
 using System.Windows.Forms.VisualStyles;
+using Microsoft.Office.Core;
 
 namespace CampScheduler
 {
@@ -28,6 +29,16 @@ namespace CampScheduler
 
         private void GenerateEmptyInputButton_Click(object sender, RibbonControlEventArgs e)
         {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
+            }
+
             var currentWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
             //emptyInputSheet.Range["A1"].Value2 = "This is a generated empty input for the scheduler!";
             
@@ -44,6 +55,16 @@ namespace CampScheduler
 
         private void GenerateExampleInputButton_Click(object sender, RibbonControlEventArgs e)
         {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
+            }
+
             var currentWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
             //emptyInputSheet.Range["A1"].Value2 = "This is a generated example input for the scheduler!";
 
@@ -60,6 +81,16 @@ namespace CampScheduler
 
         private void GenerateExampleInput2Button_Click(object sender, RibbonControlEventArgs e)
         {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
+            }
+
             var currentWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
             //emptyInputSheet.Range["A1"].Value2 = "This is a generated example input for the scheduler!";
 
@@ -76,6 +107,16 @@ namespace CampScheduler
 
         private void GenerateExampleWeekButton_Click(object sender, RibbonControlEventArgs e)
         {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
+            }
+
             var currentWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
             //emptyInputSheet.Range["A1"].Value2 = "This is a generated empty input for the scheduler!";
 
@@ -92,6 +133,16 @@ namespace CampScheduler
 
         private void GenerateEmptyWeekButton_Click(object sender, RibbonControlEventArgs e)
         {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
+            }
+
             var currentWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
             //emptyInputSheet.Range["A1"].Value2 = "This is a generated empty input for the scheduler!";
 
@@ -118,6 +169,16 @@ namespace CampScheduler
 
         private void GenerateDayOutputButton_Click(object sender, RibbonControlEventArgs e)
         {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1,18,Type.Missing,Type.Missing,true); 
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
+            }
+
             var inputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
 
             int blockBottom = 3;
@@ -170,6 +231,16 @@ namespace CampScheduler
 
         private void GenerateWeekOutputButton_Click(object sender, RibbonControlEventArgs e)
         {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
+            }
+
             var inputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
 
             int blockBottom = 3;
@@ -228,6 +299,16 @@ namespace CampScheduler
 
         private void FormatOutputButton_Click(object sender, RibbonControlEventArgs e)
         {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
+            }
+
             var outputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
 
             int columnsWidth = -1;
