@@ -194,17 +194,17 @@ namespace CampScheduler
             WeekSchedule schedule;
 
             //error handling commented out for testing purposes
-            //try
-            //{
-            schedule = SchedulerParser.GenerateWeekSchedule(blockData, activityData, groupData, rulesData);
-            //}
-            //catch (Exception ex)
-            //{
-            //    var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            //    errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
-            //    errorSheet.Range["A2"].Value2 = ex.Message;
-            //    return;
-            //}
+            try
+            {
+                schedule = SchedulerParser.GenerateWeekSchedule(blockData, activityData, groupData, rulesData);
+            }
+            catch (Exception ex)
+            {
+                var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+                errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
+                errorSheet.Range["A2"].Value2 = ex.Message;
+                return;
+            }
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
