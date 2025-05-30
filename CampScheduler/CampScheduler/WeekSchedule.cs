@@ -208,7 +208,7 @@ namespace CampScheduler
                     lunchNum = (byte)(Gen.Next(WeekInfo[day].LunchNumToTimeIndex.Count) + 1);
                     if (IsBookedInBlock(wAct.Id, day, WeekInfo[day].LunchNumToTimeIndex[lunchNum]))
                     {
-                        lunchNum = (byte)((lunchNum + 1) % WeekInfo[day].LunchNumToTimeIndex.Count);
+                        lunchNum = (byte)((lunchNum % WeekInfo[day].LunchNumToTimeIndex.Count) + 1);
                     }
                 }
 
