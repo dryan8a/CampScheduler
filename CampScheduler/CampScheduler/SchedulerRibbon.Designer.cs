@@ -45,8 +45,11 @@
             this.group2 = this.Factory.CreateRibbonGroup();
             this.GenerateDayOutputButton = this.Factory.CreateRibbonButton();
             this.GenerateWeekOutputButton = this.Factory.CreateRibbonButton();
-            this.FormatOutputButton = this.Factory.CreateRibbonButton();
             this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
+            this.FormatOutputDropDown = this.Factory.CreateRibbonDropDown();
+            this.FormatOutputButton = this.Factory.CreateRibbonButton();
+            this.UnFormatOutputButton = this.Factory.CreateRibbonButton();
+            this.DoTallyButton = this.Factory.CreateRibbonCheckBox();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -106,7 +109,8 @@
             // 
             this.group2.Items.Add(this.GenerateDayOutputButton);
             this.group2.Items.Add(this.GenerateWeekOutputButton);
-            this.group2.Items.Add(this.FormatOutputButton);
+            this.group2.Items.Add(this.FormatOutputDropDown);
+            this.group2.Items.Add(this.DoTallyButton);
             this.group2.Label = "Output";
             this.group2.Name = "group2";
             // 
@@ -122,15 +126,33 @@
             this.GenerateWeekOutputButton.Name = "GenerateWeekOutputButton";
             this.GenerateWeekOutputButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GenerateWeekOutputButton_Click);
             // 
-            // FormatOutputButton
-            // 
-            this.FormatOutputButton.Label = "Format Output";
-            this.FormatOutputButton.Name = "FormatOutputButton";
-            this.FormatOutputButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.FormatOutputButton_Click);
-            // 
             // OpenInputFileDialog
             // 
             this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
+            // 
+            // FormatOutputDropDown
+            // 
+            this.FormatOutputDropDown.Buttons.Add(this.FormatOutputButton);
+            this.FormatOutputDropDown.Buttons.Add(this.UnFormatOutputButton);
+            this.FormatOutputDropDown.Label = "Format Options";
+            this.FormatOutputDropDown.Name = "FormatOutputDropDown";
+            // 
+            // FormatOutputButton
+            // 
+            this.FormatOutputButton.Label = "Format";
+            this.FormatOutputButton.Name = "FormatOutputButton";
+            // 
+            // UnFormatOutputButton
+            // 
+            this.UnFormatOutputButton.Label = "Undo Format";
+            this.UnFormatOutputButton.Name = "UnFormatOutputButton";
+            // 
+            // DoTallyButton
+            // 
+            this.DoTallyButton.Checked = true;
+            this.DoTallyButton.Label = "Schedule With Tally";
+            this.DoTallyButton.Name = "DoTallyButton";
+            this.DoTallyButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.DoTallyButton_Click);
             // 
             // SchedulerRibbon
             // 
@@ -161,8 +183,11 @@
         private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateEmptyWeekButton;
         private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateExampleWeekButton;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton GenerateWeekOutputButton;
-        internal Microsoft.Office.Tools.Ribbon.RibbonButton FormatOutputButton;
         private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateExampleInput2Button;
+        internal Microsoft.Office.Tools.Ribbon.RibbonDropDown FormatOutputDropDown;
+        private Microsoft.Office.Tools.Ribbon.RibbonButton FormatOutputButton;
+        private Microsoft.Office.Tools.Ribbon.RibbonButton UnFormatOutputButton;
+        internal Microsoft.Office.Tools.Ribbon.RibbonCheckBox DoTallyButton;
     }
 
     partial class ThisRibbonCollection

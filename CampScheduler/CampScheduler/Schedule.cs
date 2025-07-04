@@ -20,6 +20,8 @@ namespace CampScheduler
 
         internal int NumOfSpecialists;
 
+        internal byte[,] GroupByActivityCount { get; set; }
+
         public Schedule(Group[] groups, Dictionary<Grade,byte> gradeToUnit)
         {
             Gen = new Random();

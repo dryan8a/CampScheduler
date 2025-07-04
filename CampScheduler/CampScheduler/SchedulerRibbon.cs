@@ -22,7 +22,10 @@ namespace CampScheduler
             GenerateExampleInput2Button.Click += GenerateExampleInput2Button_Click;
             GenerateEmptyWeekButton.Click += GenerateEmptyWeekButton_Click;
             GenerateExampleWeekButton.Click += GenerateExampleWeekButton_Click;
+            FormatOutputButton.Click += FormatOutputButton_Click;
+            UnFormatOutputButton.Click += UnFormatOutputButton_Click;
         }
+
         private void GenerateInputButton_SelectionChanged(object sender, RibbonControlEventArgs e)
         {   
         }
@@ -224,9 +227,15 @@ namespace CampScheduler
             var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
             schedule.OutputSchedule(outputSheet, takenNames);
 
+            if(DoTallyButton.Checked)
+            {
+                var tallySheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+                schedule.OutputTally(tallySheet, takenNames);
+
+                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(tallySheet);
+            }
 
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
-
         }
 
         private void GenerateWeekOutputButton_Click(object sender, RibbonControlEventArgs e)
@@ -295,6 +304,19 @@ namespace CampScheduler
             var takenNames = GetWorksheetsNames();
 
             schedule.OutputSchedule(outputSheets, takenNames);
+
+            foreach(var outputSheet in outputSheets)
+            {
+                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
+            }
+
+            if (DoTallyButton.Checked)
+            {
+                var tallySheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+                schedule.OutputTally(tallySheet, takenNames);
+
+                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(tallySheet);
+            }
         }
 
         private void FormatOutputButton_Click(object sender, RibbonControlEventArgs e)
@@ -309,36 +331,92 @@ namespace CampScheduler
                 }
             }
 
-            var outputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
-
-            int columnsWidth = -1;
-            while (outputSheet.Range[(char)('A' + ++columnsWidth) + "4"].Value2 != null)
+            try
             {
-                outputSheet.Range[(char)('A' + columnsWidth) + "4"].ColumnWidth = 22;
+                var outputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
+
+                int columnsWidth = -1;
+                while (outputSheet.Range[(char)('A' + ++columnsWidth) + "4"].Value2 != null)
+                {
+                    outputSheet.Range[(char)('A' + columnsWidth) + "4"].ColumnWidth = 22;
+                }
+
+                int rows = 3;
+                outputSheet.Range["A1", "A3"].RowHeight = 20;
+
+                bool isColorRow = false;
+                while (outputSheet.Range["A" + ++rows].Value2 != null)
+                {
+                    outputSheet.Range["A" + rows].RowHeight = 46;
+
+                    if (isColorRow) outputSheet.Range["A" + rows, ((char)('A' + columnsWidth - 1)).ToString() + rows].Interior.Color = Excel.XlRgbColor.rgbLightGrey;
+
+                    isColorRow = !isColorRow;
+                }
+
+                var outputRange = outputSheet.Range["A1", ((char)('A' + columnsWidth)).ToString() + (rows - 1)];
+
+                outputRange.Cells.Font.Name = "Arial";
+
+                var firstColRange = outputRange.Range["A1", "A" + (rows - 1)];
+                firstColRange.Borders[XlBordersIndex.xlEdgeRight].LineStyle = Excel.XlLineStyle.xlContinuous;
+
+                outputSheet.PageSetup.Zoom = false;
+
+            }
+            catch (Exception ex) { }
+        }
+
+        private void UnFormatOutputButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
             }
 
-            int rows = 3;
-            outputSheet.Range["A1","A3"].RowHeight = 20;
-
-            bool isColorRow = false;
-            while (outputSheet.Range["A" + ++rows].Value2 != null)
+            try
             {
-                outputSheet.Range["A" + rows].RowHeight = 46;
+                var outputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
 
-                if(isColorRow) outputSheet.Range["A" + rows, ((char)('A' + columnsWidth - 1)).ToString() + rows].Interior.Color = Excel.XlRgbColor.rgbLightGrey;
-                
-                isColorRow = !isColorRow;
+                int columnsWidth = -1;
+                while (outputSheet.Range[(char)('A' + ++columnsWidth) + "4"].Value2 != null)
+                {
+                    outputSheet.Range[(char)('A' + columnsWidth) + "4"].ColumnWidth = 16;
+                }
+
+                int rows = 3;
+                outputSheet.Range["A1", "A3"].RowHeight = 14.3;
+
+
+                while (outputSheet.Range["A" + ++rows].Value2 != null)
+                {
+                    outputSheet.Range["A" + rows].RowHeight = 14.3;
+
+                    outputSheet.Range["A" + rows, ((char)('A' + columnsWidth - 1)).ToString() + rows].Interior.ColorIndex = Excel.XlColorIndex.xlColorIndexNone;
+
+                }
+
+                var outputRange = outputSheet.Range["A1", ((char)('A' + columnsWidth)).ToString() + (rows - 1)];
+
+                outputRange.Columns.AutoFit();
+                outputRange.Cells.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                outputRange.Cells.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
+
+                outputRange.Cells.Font.Name = "Aptos Narrow";
+
+                var firstColRange = outputRange.Range["A1", "A" + (rows - 1)];
+                firstColRange.Borders[XlBordersIndex.xlEdgeRight].LineStyle = Excel.XlLineStyle.xlLineStyleNone;
             }
+            catch (Exception ex) { }
+        }
 
-            var outputRange = outputSheet.Range["A1", ((char)('A' + columnsWidth)).ToString() + (rows - 1)];
-
-            outputRange.Cells.Font.Name = "Arial";
-
-            var firstColRange = outputRange.Range["A1", "A" + (rows - 1)];
-            firstColRange.Borders[XlBordersIndex.xlEdgeRight].LineStyle = Excel.XlLineStyle.xlContinuous;
-
-            outputSheet.PageSetup.Zoom = false;
-
+        private void DoTallyButton_Click(object sender, RibbonControlEventArgs e)
+        {
         }
     }
 }

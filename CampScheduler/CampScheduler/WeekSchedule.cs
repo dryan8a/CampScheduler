@@ -68,11 +68,17 @@ namespace CampScheduler
         {
             if (groupIDs.Length == 0)
             {
-                var key = (day, actIDs[0]).GetHashCode();
+                foreach (var actID in actIDs)
+                {
+                    var key = (day, actID).GetHashCode();
 
-                if (!OffBlockRules.ContainsKey(key)) OffBlockRules.Add(key, new List<byte>());
+                    if (!OffBlockRules.ContainsKey(key)) OffBlockRules.Add(key, new List<byte>());
 
-                OffBlockRules[key].Add(timeIDs[0]); //only takes first activity and time
+                    foreach (var timeID in timeIDs)
+                    {
+                        OffBlockRules[key].Add(timeID);
+                    }
+                }
             }
             else
             {
@@ -243,7 +249,7 @@ namespace CampScheduler
             }
 
             int failCount = 0;
-            var ScheduledWaters = new List<(int TimeIndex, byte groupId, string ActName)>();
+            var ScheduledWaters = new List<(int TimeIndex, byte groupId, byte ActId)>();
             while (true)
             {
                 ScheduledWaters.Clear();
@@ -318,7 +324,7 @@ namespace CampScheduler
 
                     for (int i = 0; i < Activities[wActID].GetNumOfGroups(numOfGroupsIndex); i++)
                     {
-                        ScheduledWaters.Add((TimeIndex, groupID, Activities[wActID].Name));
+                        ScheduledWaters.Add((TimeIndex, groupID, wActID));
                         groupID++;
                         if (groupID >= Groups.Length) break;
                     }
@@ -331,7 +337,8 @@ namespace CampScheduler
             }
             foreach (var scheduledWater in ScheduledWaters)
             {
-                ScheduleData[day][scheduledWater.TimeIndex, scheduledWater.groupId] = scheduledWater.ActName;
+                ScheduleData[day][scheduledWater.TimeIndex, scheduledWater.groupId] = Activities[scheduledWater.ActId].Name;
+                GroupByActivityCount[scheduledWater.groupId, scheduledWater.ActId]++;
             }
         }
 
@@ -514,7 +521,10 @@ namespace CampScheduler
                         if (needsOverflow)
                         {
                             if (OverflowActInds.Count == 0) throw new Exception("Couldn't schedule all activities; please add an overflow activity");
-                            ScheduleData[day.DayName][blockIndex, group.RowNum] = Activities[OverflowActInds[Gen.Next(OverflowActInds.Count)]].Name;
+
+                            var overflowId = OverflowActInds[Gen.Next(OverflowActInds.Count)];
+                            ScheduleData[day.DayName][blockIndex, group.RowNum] = Activities[overflowId].Name;
+                            GroupByActivityCount[group.RowNum, overflowId]++;
                         }
                         else
                         {
@@ -522,17 +532,19 @@ namespace CampScheduler
                             {
                                 ScheduleData[day.DayName][blockIndex, group.RowNum + i] = ActToSchedule.Name;
                                 ActGroupScheduledCounts[ActToSchedule.Id, group.RowNum + i]++;
+                                GroupByActivityCount[group.RowNum + i, ActToSchedule.Id]++;
                             }
                             currentBookableActIndInd++;
                         }
                     }
                 }
             }
-             ;
         }
 
         public override void GenerateSchedule()
         {
+            //Initialize Activity Counter
+            GroupByActivityCount = new byte[Groups.Length, Activities.Count];
 
             var LunchNumsCount = new Dictionary<string, int[]>();
 
@@ -574,6 +586,7 @@ namespace CampScheduler
                     foreach (var groupID in rule.GroupIDs)
                     {
                         ScheduleData[dayInfo.DayName][timeIndex, groupID] = Activities[actID].Name;
+                        GroupByActivityCount[groupID, actID]++;
 
                         if (Activities[actID].WaterActivity)
                         {
@@ -637,6 +650,59 @@ namespace CampScheduler
                 i++;
             }
             //System.Runtime.InteropServices.Marshal.ReleaseComObject(outputSheets);
+        }
+
+        public void OutputTally(Excel.Worksheet tallySheet, string[] takenSheetNames)
+        {
+            string bottomRightIndex;
+            if (Activities.Count > 25)
+            {
+                var quo = Math.DivRem(Activities.Count + 1, 26, out int rem);
+                bottomRightIndex = (char)('A' + quo - 1) + "" + (char)('A' + rem) + (Activities.Count + 1).ToString();
+            }
+            else bottomRightIndex = (char)('A' + Activities.Count + 1) + (Groups.Length + 1).ToString();
+
+            var outputRange = tallySheet.Range["A1", bottomRightIndex];
+
+            string baseName = $"Activities Tally";
+            string currentName = baseName;
+            for (int i = 0; ; i++)
+            {
+                currentName = i == 0 ? baseName : baseName + $" ({i})";
+                if (!takenSheetNames.Contains(currentName)) break;
+            }
+            tallySheet.Name = currentName;
+
+            for (int column = 0; column < Activities.Count; column++)
+            {
+                outputRange.Cells[1, column + 2].Value2 = Activities[column].Name;
+            }
+
+            for (int row = 0; row < Groups.Length; row++)
+            {
+                outputRange.Cells[row + 2, 1].Value2 = Groups[row].Name;
+            }
+
+            for (int row = 0; row < Groups.Length; row++)
+            {
+                for (int column = 0; column < Activities.Count; column++)
+                {
+                    outputRange.Cells[row + 2, column + 2].Value2 = GroupByActivityCount[row, column].ToString();
+                }
+            }
+
+            outputRange.Columns.AutoFit();
+            outputRange.Cells.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+            outputRange.Cells.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
+
+            ColorScale colorScale = outputRange.FormatConditions.AddColorScale(2);
+            colorScale.ColorScaleCriteria[1].Type = XlConditionValueTypes.xlConditionValueLowestValue;
+            colorScale.ColorScaleCriteria[1].FormatColor.ColorIndex = Excel.XlColorIndex.xlColorIndexNone;
+            colorScale.ColorScaleCriteria[2].Type = XlConditionValueTypes.xlConditionValueHighestValue;
+            colorScale.ColorScaleCriteria[2].FormatColor.Color = Color.FromArgb(0, 158, 62);
+
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputRange);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(tallySheet);
         }
     }
 }
