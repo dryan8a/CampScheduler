@@ -45,11 +45,11 @@
             this.group2 = this.Factory.CreateRibbonGroup();
             this.GenerateDayOutputButton = this.Factory.CreateRibbonButton();
             this.GenerateWeekOutputButton = this.Factory.CreateRibbonButton();
-            this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.FormatOutputDropDown = this.Factory.CreateRibbonDropDown();
             this.FormatOutputButton = this.Factory.CreateRibbonButton();
             this.UnFormatOutputButton = this.Factory.CreateRibbonButton();
             this.DoTallyButton = this.Factory.CreateRibbonCheckBox();
+            this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -126,10 +126,6 @@
             this.GenerateWeekOutputButton.Name = "GenerateWeekOutputButton";
             this.GenerateWeekOutputButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GenerateWeekOutputButton_Click);
             // 
-            // OpenInputFileDialog
-            // 
-            this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
-            // 
             // FormatOutputDropDown
             // 
             this.FormatOutputDropDown.Buttons.Add(this.FormatOutputButton);
@@ -153,6 +149,10 @@
             this.DoTallyButton.Label = "Schedule With Tally";
             this.DoTallyButton.Name = "DoTallyButton";
             this.DoTallyButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.DoTallyButton_Click);
+            // 
+            // OpenInputFileDialog
+            // 
+            this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
             // 
             // SchedulerRibbon
             // 

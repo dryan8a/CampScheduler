@@ -655,7 +655,7 @@ namespace CampScheduler
         public void OutputTally(Excel.Worksheet tallySheet, string[] takenSheetNames)
         {
             string bottomRightIndex;
-            if (Activities.Count > 25)
+            if (Activities.Count >= 25)
             {
                 var quo = Math.DivRem(Activities.Count + 1, 26, out int rem);
                 bottomRightIndex = (char)('A' + quo - 1) + "" + (char)('A' + rem) + (Activities.Count + 1).ToString();
