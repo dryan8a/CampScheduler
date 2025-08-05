@@ -12,6 +12,8 @@ namespace CampScheduler
         internal Random Gen { get; }
 
         internal Group[] Groups { get; }
+        public int NumOfGroups => Groups.Length;
+
         internal Dictionary<Grade, byte> GradeToUnit { get; }
 
         internal List<byte> GroupIDsWithRuleWActs { get; }

@@ -50,6 +50,7 @@
             this.UnFormatOutputButton = this.Factory.CreateRibbonButton();
             this.DoTallyButton = this.Factory.CreateRibbonCheckBox();
             this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
+            this.GroupSchedulesBox = this.Factory.CreateRibbonCheckBox();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -111,6 +112,7 @@
             this.group2.Items.Add(this.GenerateWeekOutputButton);
             this.group2.Items.Add(this.FormatOutputDropDown);
             this.group2.Items.Add(this.DoTallyButton);
+            this.group2.Items.Add(this.GroupSchedulesBox);
             this.group2.Label = "Output";
             this.group2.Name = "group2";
             // 
@@ -154,6 +156,12 @@
             // 
             this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
             // 
+            // GroupSchedulesBox
+            // 
+            this.GroupSchedulesBox.Label = "Include Group Schedules";
+            this.GroupSchedulesBox.Name = "GroupSchedulesBox";
+            this.GroupSchedulesBox.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GroupSchedulesBox_Click);
+            // 
             // SchedulerRibbon
             // 
             this.Name = "SchedulerRibbon";
@@ -188,6 +196,7 @@
         private Microsoft.Office.Tools.Ribbon.RibbonButton FormatOutputButton;
         private Microsoft.Office.Tools.Ribbon.RibbonButton UnFormatOutputButton;
         internal Microsoft.Office.Tools.Ribbon.RibbonCheckBox DoTallyButton;
+        internal Microsoft.Office.Tools.Ribbon.RibbonCheckBox GroupSchedulesBox;
     }
 
     partial class ThisRibbonCollection

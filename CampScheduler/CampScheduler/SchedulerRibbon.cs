@@ -227,7 +227,9 @@ namespace CampScheduler
             var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
             schedule.OutputSchedule(outputSheet, takenNames);
 
-            if(DoTallyButton.Checked)
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
+
+            if (DoTallyButton.Checked)
             {
                 var tallySheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
                 schedule.OutputTally(tallySheet, takenNames);
@@ -235,7 +237,22 @@ namespace CampScheduler
                 System.Runtime.InteropServices.Marshal.FinalReleaseComObject(tallySheet);
             }
 
-            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
+            if (GroupSchedulesBox.Checked)
+            {
+                var groupSheets = new Excel.Worksheet[schedule.NumOfGroups];
+
+                for (int i = 0; i < groupSheets.Length; i++)
+                {
+                    groupSheets[i] = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+                }
+
+                schedule.OutputGroups(groupSheets, takenNames);
+
+                for(int i = 0; i < groupSheets.Length; i++)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupSheets[i]);
+                }
+            }
         }
 
         private void GenerateWeekOutputButton_Click(object sender, RibbonControlEventArgs e)
@@ -316,6 +333,23 @@ namespace CampScheduler
                 schedule.OutputTally(tallySheet, takenNames);
 
                 System.Runtime.InteropServices.Marshal.FinalReleaseComObject(tallySheet);
+            }
+
+            if (GroupSchedulesBox.Checked)
+            {
+                var groupSheets = new Excel.Worksheet[schedule.NumOfGroups];
+
+                for (int i = 0; i < groupSheets.Length; i++)
+                {
+                    groupSheets[i] = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+                }
+
+                schedule.OutputGroups(groupSheets, takenNames);
+
+                for (int i = 0; i < groupSheets.Length; i++)
+                {
+                    System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupSheets[i]);
+                }
             }
         }
 
@@ -417,6 +451,11 @@ namespace CampScheduler
 
         private void DoTallyButton_Click(object sender, RibbonControlEventArgs e)
         {
+        }
+
+        private void GroupSchedulesBox_Click(object sender, RibbonControlEventArgs e)
+        {
+
         }
     }
 }
