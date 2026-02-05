@@ -208,6 +208,7 @@
     can be found.
   -->
   <ItemGroup>
+    <Compile Include="Bump.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

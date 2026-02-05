@@ -22,6 +22,10 @@ namespace CampScheduler
             GenerateExampleInput2Button.Click += GenerateExampleInput2Button_Click;
             GenerateEmptyWeekButton.Click += GenerateEmptyWeekButton_Click;
             GenerateExampleWeekButton.Click += GenerateExampleWeekButton_Click;
+            GenerateEmptyBumpButton.Click += GenerateEmptyBumpButton_Click;
+            GenerateExampleBumpButton.Click += GenerateExampleBumpButton_Click;
+            
+
             FormatOutputButton.Click += FormatOutputButton_Click;
             UnFormatOutputButton.Click += UnFormatOutputButton_Click;
         }
@@ -159,6 +163,58 @@ namespace CampScheduler
 
             exampleWorkbook.Close(false);
         }
+
+        private void GenerateEmptyBumpButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
+            }
+
+            var currentWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
+
+            Globals.ThisAddIn.Application.Workbooks.Open(AppDomain.CurrentDomain.BaseDirectory + "CampSchedulerInputExamples.xlsx");
+
+            var exampleWorkbookIndex = Globals.ThisAddIn.Application.Workbooks.Count; //THIS IS NOT THREAD SAFE, PLEASE PROGRAMATICALLY OPEN ANY OTHER WORKBOOKS (luckily it should hopefully just crash and not harm data)
+            var exampleWorkbook = Globals.ThisAddIn.Application.Workbooks[exampleWorkbookIndex];
+
+            exampleWorkbook.Windows[1].Visible = false;
+            ((Excel.Worksheet)exampleWorkbook.Worksheets[6]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
+
+            exampleWorkbook.Close(false);
+        }
+
+        private void GenerateExampleBumpButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
+            }
+
+            var currentWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
+
+            Globals.ThisAddIn.Application.Workbooks.Open(AppDomain.CurrentDomain.BaseDirectory + "CampSchedulerInputExamples.xlsx");
+
+            var exampleWorkbookIndex = Globals.ThisAddIn.Application.Workbooks.Count; //THIS IS NOT THREAD SAFE, PLEASE PROGRAMATICALLY OPEN ANY OTHER WORKBOOKS (luckily it should hopefully just crash and not harm data)
+            var exampleWorkbook = Globals.ThisAddIn.Application.Workbooks[exampleWorkbookIndex];
+
+            exampleWorkbook.Windows[1].Visible = false;
+            ((Excel.Worksheet)exampleWorkbook.Worksheets[7]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
+
+            exampleWorkbook.Close(false);
+        }
+
+        
 
         private string[] GetWorksheetsNames()
         {
@@ -310,6 +366,7 @@ namespace CampScheduler
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(rulesData);
 
             var outputSheets = new Excel.Worksheet[schedule.NumOfDays];
 
@@ -337,20 +394,81 @@ namespace CampScheduler
 
             if (GroupSchedulesBox.Checked)
             {
+                Excel.Workbook GroupsWorkbook = (Excel.Workbook)Globals.ThisAddIn.Application.Workbooks.Add();
+
                 var groupSheets = new Excel.Worksheet[schedule.NumOfGroups];
 
-                for (int i = 0; i < groupSheets.Length; i++)
+                for (int i = groupSheets.Length-1; i >= 0; i--)
                 {
                     groupSheets[i] = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
                 }
 
                 schedule.OutputGroups(groupSheets, takenNames);
 
+                ((Excel.Worksheet)Globals.ThisAddIn.Application.ActiveWorkbook.Sheets[groupSheets.Length+1]).Delete();
+
                 for (int i = 0; i < groupSheets.Length; i++)
                 {
                     System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupSheets[i]);
                 }
+
+                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(GroupsWorkbook);
             }
+        }
+
+        private void GenerateBumpButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
+            }
+
+            var inputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
+
+            int blockBottom = 3;
+            while (inputSheet.Range["A" + ++blockBottom].Value2 != null) ;
+            var blockData = inputSheet.Range["A3", "C" + (blockBottom - 1)];
+
+            int activityBottom = 3;
+            while (inputSheet.Range["E" + ++activityBottom].Value2 != null) ;
+            var activityData = inputSheet.Range["E3", "K" + (activityBottom - 1)];
+
+            int counselorBottom = 3;
+            while (inputSheet.Range["M" + ++counselorBottom].Value2 != null) ;
+            var counselorData = inputSheet.Range["M3", "R" + (counselorBottom - 1)];
+
+            Bump bump;
+            //error handling commented out for testing purposes
+            try
+            {
+                bump = SchedulerParser.GenerateBump(blockData,activityData,counselorData);
+            }
+            catch (Exception ex)
+            {
+                var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+                errorSheet.Range["A1"].Value2 = "An Error occured while generating schedule:";
+                errorSheet.Range["A2"].Value2 = ex.Message;
+                return;
+            }
+            
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(inputSheet);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(counselorData);
+
+            var takenNames = GetWorksheetsNames();
+
+            var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
+            //bump.OutputBump(outputSheet, takenNames);
+
         }
 
         private void FormatOutputButton_Click(object sender, RibbonControlEventArgs e)

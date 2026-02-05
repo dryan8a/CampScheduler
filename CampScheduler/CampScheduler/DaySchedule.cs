@@ -18,7 +18,7 @@ namespace CampScheduler
 {
     public class DaySchedule : Schedule
     {
-        public string[,] ScheduleData; //change to internal
+        internal string[,] ScheduleData; //change to internal
         internal List<DayActivity> Activities { get; }
         internal List<DayActivity> WaterActivities { get; }
 

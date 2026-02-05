@@ -168,4 +168,62 @@ namespace CampScheduler
         SpecialGroup,
         OffBlock
     }
+
+    public enum ChangingRoomCode
+    {
+        n = 0,
+        F,
+        M,
+        B
+    }
+
+    public enum ScheduleBumpReturnCode
+    {
+        NotReturned = 0,
+        Success,
+        Duplicate,
+        IncorrectPay,
+        Inaccessible,
+    }
+
+    public readonly struct Counselor
+    {
+        public string Name { get; }
+        public bool Paid { get; }
+        public ChangingRoomCode ChangingRoom { get; }
+        public byte LunchNum { get; }
+        public bool Handicapped { get; }
+
+        public Counselor(string name, bool paid, ChangingRoomCode changingRoom, byte lunchNum, bool handicapped)
+        {
+            Name = name;
+            Paid = paid;
+            ChangingRoom = changingRoom;
+            LunchNum = lunchNum;
+            Handicapped = handicapped;
+        }
+    }
+
+    public struct BumpActivity
+    {
+        public byte Id { get; }
+        public string Name { get; }
+        public byte NumPaid { get; }
+        public byte NumUnpaid { get; }
+        public ChangingRoomCode Required { get; }
+        public bool IsAccessible { get; }
+
+        public bool Overflow { get; }
+
+        public BumpActivity(byte id, string name, byte numPaid, byte numUnpaid, ChangingRoomCode required, bool isAccessible, bool overflow)
+        {
+            Id = id;
+            Name = name;
+            NumPaid = numPaid;
+            NumUnpaid = numUnpaid;
+            Required = required;
+            IsAccessible = isAccessible;
+            Overflow = overflow;
+        }
+    }
 }

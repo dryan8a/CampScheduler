@@ -20,7 +20,7 @@ namespace CampScheduler
 {
     public class WeekSchedule : Schedule
     {
-        public Dictionary<string,string[,]> ScheduleData; //change to internal
+        internal Dictionary<string,string[,]> ScheduleData; //change to internal
         internal List<WeekActivity> Activities { get; }
         internal List<WeekActivity> WaterActivities { get; }
 

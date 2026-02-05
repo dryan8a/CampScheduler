@@ -49,8 +49,11 @@
             this.FormatOutputButton = this.Factory.CreateRibbonButton();
             this.UnFormatOutputButton = this.Factory.CreateRibbonButton();
             this.DoTallyButton = this.Factory.CreateRibbonCheckBox();
-            this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.GroupSchedulesBox = this.Factory.CreateRibbonCheckBox();
+            this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
+            this.GenerateEmptyBumpButton = this.Factory.CreateRibbonButton();
+            this.GenerateExampleBumpButton = this.Factory.CreateRibbonButton();
+            this.GenerateBumpButton = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -77,6 +80,8 @@
             this.GenerateInputButton.Buttons.Add(this.GenerateExampleInput2Button);
             this.GenerateInputButton.Buttons.Add(this.GenerateEmptyWeekButton);
             this.GenerateInputButton.Buttons.Add(this.GenerateExampleWeekButton);
+            this.GenerateInputButton.Buttons.Add(this.GenerateEmptyBumpButton);
+            this.GenerateInputButton.Buttons.Add(this.GenerateExampleBumpButton);
             this.GenerateInputButton.Label = "Generate Input File";
             this.GenerateInputButton.Name = "GenerateInputButton";
             this.GenerateInputButton.SelectionChanged += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GenerateInputButton_SelectionChanged);
@@ -110,6 +115,7 @@
             // 
             this.group2.Items.Add(this.GenerateDayOutputButton);
             this.group2.Items.Add(this.GenerateWeekOutputButton);
+            this.group2.Items.Add(this.GenerateBumpButton);
             this.group2.Items.Add(this.FormatOutputDropDown);
             this.group2.Items.Add(this.DoTallyButton);
             this.group2.Items.Add(this.GroupSchedulesBox);
@@ -152,15 +158,31 @@
             this.DoTallyButton.Name = "DoTallyButton";
             this.DoTallyButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.DoTallyButton_Click);
             // 
-            // OpenInputFileDialog
-            // 
-            this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
-            // 
             // GroupSchedulesBox
             // 
             this.GroupSchedulesBox.Label = "Include Group Schedules";
             this.GroupSchedulesBox.Name = "GroupSchedulesBox";
             this.GroupSchedulesBox.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GroupSchedulesBox_Click);
+            // 
+            // OpenInputFileDialog
+            // 
+            this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
+            // 
+            // GenerateEmptyBumpButton
+            // 
+            this.GenerateEmptyBumpButton.Label = "Empty Bump";
+            this.GenerateEmptyBumpButton.Name = "GenerateEmptyBumpButton";
+            // 
+            // GenerateExampleBumpButton
+            // 
+            this.GenerateExampleBumpButton.Label = "Example Bump";
+            this.GenerateExampleBumpButton.Name = "GenerateExampleBumpButton";
+            // 
+            // GenerateBumpButton
+            // 
+            this.GenerateBumpButton.Label = "Generate Bump";
+            this.GenerateBumpButton.Name = "GenerateBumpButton";
+            this.GenerateBumpButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GenerateBumpButton_Click);
             // 
             // SchedulerRibbon
             // 
@@ -197,6 +219,9 @@
         private Microsoft.Office.Tools.Ribbon.RibbonButton UnFormatOutputButton;
         internal Microsoft.Office.Tools.Ribbon.RibbonCheckBox DoTallyButton;
         internal Microsoft.Office.Tools.Ribbon.RibbonCheckBox GroupSchedulesBox;
+        private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateEmptyBumpButton;
+        private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateExampleBumpButton;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton GenerateBumpButton;
     }
 
     partial class ThisRibbonCollection

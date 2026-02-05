@@ -36,6 +36,21 @@ namespace CampScheduler
             }
         }
 
+        public static ChangingRoomCode ParseChangingRoom(string roomInput)
+        {
+            switch(roomInput)
+            {
+                case "f":
+                    return ChangingRoomCode.F;
+                case "m":
+                    return ChangingRoomCode.M;
+                case "b":
+                    return ChangingRoomCode.B;
+                default:
+                    return ChangingRoomCode.n;
+            }
+        }
+
         public static Grade[] ParseGrades(string gradesInput)
         {
             var gradeStrings = gradesInput.Split(',');
@@ -295,5 +310,95 @@ namespace CampScheduler
 
             return schedule;
         }
+
+        public static Bump GenerateBump(Excel.Range blockData, Excel.Range activityData, Excel.Range counselorData)
+        {
+            List<BumpActivity> activities = new List<BumpActivity>();
+            List<Counselor> counselors = new List<Counselor>();
+
+            List<string> times = new List<string>();
+            Dictionary<byte, byte> lunchNumToTimeIndex = new Dictionary<byte, byte>();
+            try
+            {
+                for (byte i = 0; i < blockData.Rows.Count; i++)
+                {
+                    bool isOpen = YNParse(blockData.Cells.Value2[i + 1, 2]);
+                    if(!isOpen) continue;
+                    
+                    var timeName = blockData.Cells[i + 1, 1].Text;
+                    times.Add(timeName);
+
+                    var lunchNum = blockData.Cells.Value2[i + 1, 3];
+                    if (lunchNum != 0) lunchNumToTimeIndex.Add((byte)lunchNum, i);
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to parse blocks table; check for empty or invalid inputs");
+            }
+
+            DayInfo dayInfo = new DayInfo("Day", times.ToArray(), new SpecialActivityPrefs[0], lunchNumToTimeIndex);
+
+            try
+            {
+                byte id = 0;
+                for (byte i = 0; i < activityData.Rows.Count; i++)
+                {
+                    bool open = YNParse(activityData.Cells.Value2[i + 1, 2]);
+                    if (!open) continue;
+
+                    var name = activityData.Cells.Value2[i + 1, 1];
+                    var numOfPaid = activityData.Cells.Value2[i + 1, 3];
+                    var numOfUnpaid = activityData.Cells.Value2[i + 1, 4];
+                    var required = ParseChangingRoom(activityData.Cells.Value2[i + 1, 5]);
+                    bool accessible = YNParse(activityData.Cells.Value2[i + 1, 6]);
+                    bool overflow = YNParse(activityData.Cells.Value2[i + 1, 7]);
+
+                    activities.Add(new BumpActivity(id, name, (byte)numOfPaid, (byte)numOfUnpaid, required, accessible, overflow));
+                    id++;
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to parse activities table; check for empty or invalid inputs");
+            }
+
+            try
+            {
+                
+                for (byte i = 0; i < counselorData.Rows.Count; i++)
+                {
+                    bool working = YNParse(counselorData.Cells.Value2[i + 1, 6]);
+                    if (!working) continue;
+
+                    var name = counselorData.Cells.Value2[i + 1, 1];
+                    bool paid = YNParse(counselorData.Cells.Value2[i + 1, 2]);
+                    var changingRoom = ParseChangingRoom(counselorData.Cells.Value2[i + 1, 3]);
+                    var lunch = counselorData.Cells.Value2[i + 1, 4];
+                    bool handicap = YNParse(counselorData.Cells.Value2[i + 1, 5]);
+
+                    counselors.Add(new Counselor(name, paid, changingRoom, (byte)lunch, handicap));
+                }
+            }
+            catch (Exception)
+            {
+                throw new Exception("Failed to parse counselors table; check for empty or invalid inputs");
+            }
+
+            var bump = new Bump(dayInfo, activities, counselors);
+
+            bump.GenerateBump();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(blockData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(counselorData);
+
+            return bump;
+
+        }
+
     }
 }
