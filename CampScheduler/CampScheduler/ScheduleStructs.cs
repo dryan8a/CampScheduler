@@ -184,18 +184,21 @@ namespace CampScheduler
         Duplicate,
         IncorrectPay,
         Inaccessible,
+        WrongRoom
     }
 
     public readonly struct Counselor
     {
+        public byte Id { get; }
         public string Name { get; }
         public bool Paid { get; }
         public ChangingRoomCode ChangingRoom { get; }
         public byte LunchNum { get; }
         public bool Handicapped { get; }
 
-        public Counselor(string name, bool paid, ChangingRoomCode changingRoom, byte lunchNum, bool handicapped)
+        public Counselor(byte id, string name, bool paid, ChangingRoomCode changingRoom, byte lunchNum, bool handicapped)
         {
+            Id = id;
             Name = name;
             Paid = paid;
             ChangingRoom = changingRoom;

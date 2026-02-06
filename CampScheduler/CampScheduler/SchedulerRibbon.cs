@@ -384,6 +384,8 @@ namespace CampScheduler
                 System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
             }
 
+
+            //Output Tally
             if (DoTallyButton.Checked)
             {
                 var tallySheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
@@ -392,6 +394,7 @@ namespace CampScheduler
                 System.Runtime.InteropServices.Marshal.FinalReleaseComObject(tallySheet);
             }
 
+            //Output Groups
             if (GroupSchedulesBox.Checked)
             {
                 Excel.Workbook GroupsWorkbook = (Excel.Workbook)Globals.ThisAddIn.Application.Workbooks.Add();
@@ -443,7 +446,7 @@ namespace CampScheduler
             var counselorData = inputSheet.Range["M3", "R" + (counselorBottom - 1)];
 
             Bump bump;
-            //error handling commented out for testing purposes
+            
             try
             {
                 bump = SchedulerParser.GenerateBump(blockData,activityData,counselorData);
@@ -467,8 +470,9 @@ namespace CampScheduler
             var takenNames = GetWorksheetsNames();
 
             var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            //bump.OutputBump(outputSheet, takenNames);
+            bump.OutputBump(outputSheet, takenNames);
 
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
         }
 
         private void FormatOutputButton_Click(object sender, RibbonControlEventArgs e)
@@ -536,24 +540,16 @@ namespace CampScheduler
                 var outputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
 
                 int columnsWidth = -1;
-                while (outputSheet.Range[(char)('A' + ++columnsWidth) + "4"].Value2 != null)
-                {
-                    outputSheet.Range[(char)('A' + columnsWidth) + "4"].ColumnWidth = 16;
-                }
+                do { columnsWidth++; } while (outputSheet.Range[(char)('A' + columnsWidth) + "4"].Value2 != null || outputSheet.Range[(char)('B' + columnsWidth) + "3"].Value2 != null);
 
                 int rows = 3;
-                outputSheet.Range["A1", "A3"].RowHeight = 14.3;
 
-
-                while (outputSheet.Range["A" + ++rows].Value2 != null)
-                {
-                    outputSheet.Range["A" + rows].RowHeight = 14.3;
-
-                    outputSheet.Range["A" + rows, ((char)('A' + columnsWidth - 1)).ToString() + rows].Interior.ColorIndex = Excel.XlColorIndex.xlColorIndexNone;
-
-                }
+                do { rows++; } while (outputSheet.Range["A" + rows].Value2 != null || outputSheet.Range["B" + rows].Value2 != null || outputSheet.Range["B" + (rows + 1)].Value2 != null);
 
                 var outputRange = outputSheet.Range["A1", ((char)('A' + columnsWidth)).ToString() + (rows - 1)];
+                outputRange.ColumnWidth = 16;
+                outputRange.RowHeight = 14.3;
+                outputRange.Interior.ColorIndex = Excel.XlColorIndex.xlColorIndexNone;
 
                 outputRange.Columns.AutoFit();
                 outputRange.Cells.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;

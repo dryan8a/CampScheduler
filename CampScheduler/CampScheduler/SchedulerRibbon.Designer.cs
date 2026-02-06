@@ -42,18 +42,18 @@
             this.GenerateExampleInput2Button = this.Factory.CreateRibbonButton();
             this.GenerateEmptyWeekButton = this.Factory.CreateRibbonButton();
             this.GenerateExampleWeekButton = this.Factory.CreateRibbonButton();
+            this.GenerateEmptyBumpButton = this.Factory.CreateRibbonButton();
+            this.GenerateExampleBumpButton = this.Factory.CreateRibbonButton();
             this.group2 = this.Factory.CreateRibbonGroup();
             this.GenerateDayOutputButton = this.Factory.CreateRibbonButton();
             this.GenerateWeekOutputButton = this.Factory.CreateRibbonButton();
+            this.GenerateBumpButton = this.Factory.CreateRibbonButton();
             this.FormatOutputDropDown = this.Factory.CreateRibbonDropDown();
             this.FormatOutputButton = this.Factory.CreateRibbonButton();
             this.UnFormatOutputButton = this.Factory.CreateRibbonButton();
             this.DoTallyButton = this.Factory.CreateRibbonCheckBox();
             this.GroupSchedulesBox = this.Factory.CreateRibbonCheckBox();
             this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
-            this.GenerateEmptyBumpButton = this.Factory.CreateRibbonButton();
-            this.GenerateExampleBumpButton = this.Factory.CreateRibbonButton();
-            this.GenerateBumpButton = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -111,6 +111,16 @@
             this.GenerateExampleWeekButton.Label = "Example Week";
             this.GenerateExampleWeekButton.Name = "GenerateExampleWeekButton";
             // 
+            // GenerateEmptyBumpButton
+            // 
+            this.GenerateEmptyBumpButton.Label = "Empty Bump";
+            this.GenerateEmptyBumpButton.Name = "GenerateEmptyBumpButton";
+            // 
+            // GenerateExampleBumpButton
+            // 
+            this.GenerateExampleBumpButton.Label = "Example Bump";
+            this.GenerateExampleBumpButton.Name = "GenerateExampleBumpButton";
+            // 
             // group2
             // 
             this.group2.Items.Add(this.GenerateDayOutputButton);
@@ -133,6 +143,12 @@
             this.GenerateWeekOutputButton.Label = "Generate Output (Week)";
             this.GenerateWeekOutputButton.Name = "GenerateWeekOutputButton";
             this.GenerateWeekOutputButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GenerateWeekOutputButton_Click);
+            // 
+            // GenerateBumpButton
+            // 
+            this.GenerateBumpButton.Label = "Generate Bump";
+            this.GenerateBumpButton.Name = "GenerateBumpButton";
+            this.GenerateBumpButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GenerateBumpButton_Click);
             // 
             // FormatOutputDropDown
             // 
@@ -167,22 +183,6 @@
             // OpenInputFileDialog
             // 
             this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
-            // 
-            // GenerateEmptyBumpButton
-            // 
-            this.GenerateEmptyBumpButton.Label = "Empty Bump";
-            this.GenerateEmptyBumpButton.Name = "GenerateEmptyBumpButton";
-            // 
-            // GenerateExampleBumpButton
-            // 
-            this.GenerateExampleBumpButton.Label = "Example Bump";
-            this.GenerateExampleBumpButton.Name = "GenerateExampleBumpButton";
-            // 
-            // GenerateBumpButton
-            // 
-            this.GenerateBumpButton.Label = "Generate Bump";
-            this.GenerateBumpButton.Name = "GenerateBumpButton";
-            this.GenerateBumpButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.GenerateBumpButton_Click);
             // 
             // SchedulerRibbon
             // 

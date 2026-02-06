@@ -377,7 +377,7 @@ namespace CampScheduler
                     var lunch = counselorData.Cells.Value2[i + 1, 4];
                     bool handicap = YNParse(counselorData.Cells.Value2[i + 1, 5]);
 
-                    counselors.Add(new Counselor(name, paid, changingRoom, (byte)lunch, handicap));
+                    counselors.Add(new Counselor(i, name, paid, changingRoom, (byte)lunch, handicap));
                 }
             }
             catch (Exception)
