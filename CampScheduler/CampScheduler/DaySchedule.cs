@@ -542,7 +542,7 @@ namespace CampScheduler
             ScheduleRegularActivities(LunchNumsCount);
         }
 
-        public void OutputSchedule(Excel.Worksheet outputSheet, string[] takenSheetNames)
+        public string OutputSchedule(Excel.Worksheet outputSheet, string[] takenSheetNames)
         {
             var outputRange = outputSheet.Range["A1", "Z100"];
 
@@ -583,9 +583,11 @@ namespace CampScheduler
 
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputRange);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
+
+            return currentName;
         }
 
-        public void OutputTally(Excel.Worksheet tallySheet, string[] takenSheetNames)
+        public string OutputTally(Excel.Worksheet tallySheet, string[] takenSheetNames)
         {
             string bottomRightIndex;
             if (Activities.Count >= 25)
@@ -637,9 +639,11 @@ namespace CampScheduler
 
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputRange);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(tallySheet);
+
+            return currentName;
         }
 
-        public void OutputGroup(Excel.Worksheet outputSheet, string[] takenSheetNames, Group group)
+        public string OutputGroup(Excel.Worksheet outputSheet, string[] takenSheetNames, Group group)
         {
             string bottomRightIndex;
             if (Activities.Count >= 25)
@@ -684,15 +688,20 @@ namespace CampScheduler
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputRange);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
 
+            return currentName;
         }
         
-        public void OutputGroups(Excel.Worksheet[] outputSheets, string[] takenSheetNames)
+        public string[] OutputGroups(Excel.Worksheet[] outputSheets, string[] takenSheetNames)
         {
+            var names = new string[outputSheets.Length];
+
             for(int i = 0; i < Math.Min(outputSheets.Length, Groups.Length);i++)
             {
-                OutputGroup(outputSheets[i], takenSheetNames, Groups[i]);
+                names[i] = OutputGroup(outputSheets[i], takenSheetNames, Groups[i]);
                 System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheets[i]);
             }
+
+            return names;
         }
 
     }

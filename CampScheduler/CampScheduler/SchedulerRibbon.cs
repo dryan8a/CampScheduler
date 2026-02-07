@@ -15,6 +15,10 @@ namespace CampScheduler
 {
     public partial class SchedulerRibbon
     {
+        public Dictionary<string, int> sheetNameToIndex;
+
+        public Excel.Workbook UserIntendedWorkbook;
+
         private void SchedulerRibbon_Load(object sender, RibbonUIEventArgs e)
         {
             GenerateEmptyInputButton.Click += GenerateEmptyInputButton_Click;
@@ -29,6 +33,18 @@ namespace CampScheduler
             FormatOutputButton.Click += FormatOutputButton_Click;
             FormatBumpButton.Click += FormatBumpButton_Click;
             UnFormatOutputButton.Click += UnFormatOutputButton_Click;
+
+            //TallyNameBox.TextChanged += TallyNameBox_TextChanged;
+
+            Globals.ThisAddIn.Application.WorkbookNewSheet += Application_WorkbookNewSheet;
+            Globals.ThisAddIn.Application.SheetBeforeDelete += Application_SheetBeforeDelete;
+
+            sheetNameToIndex = new Dictionary<string, int>();
+            sheetNameToIndex.Add("", 0);
+
+            UserIntendedWorkbook = null;
+
+           // foreach(string SheetName in GetWorksheetsNames()) AddWorkbookSheet(SheetName);
         }
 
         private void GenerateInputButton_SelectionChanged(object sender, RibbonControlEventArgs e)
@@ -59,6 +75,8 @@ namespace CampScheduler
             ((Excel.Worksheet)exampleWorkbook.Worksheets[1]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
 
             exampleWorkbook.Close(false);
+
+            AddWorksheet(((Excel.Worksheet)Globals.ThisAddIn.Application.ActiveSheet).Name);
         }
 
         private void GenerateExampleInputButton_Click(object sender, RibbonControlEventArgs e)
@@ -85,6 +103,8 @@ namespace CampScheduler
             ((Excel.Worksheet)exampleWorkbook.Worksheets[2]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
 
             exampleWorkbook.Close(false);
+
+            AddWorksheet(((Excel.Worksheet)Globals.ThisAddIn.Application.ActiveSheet).Name);
         }
 
         private void GenerateExampleInput2Button_Click(object sender, RibbonControlEventArgs e)
@@ -111,6 +131,8 @@ namespace CampScheduler
             ((Excel.Worksheet)exampleWorkbook.Worksheets[3]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
 
             exampleWorkbook.Close(false);
+
+            AddWorksheet(((Excel.Worksheet)Globals.ThisAddIn.Application.ActiveSheet).Name);
         }
 
         private void GenerateExampleWeekButton_Click(object sender, RibbonControlEventArgs e)
@@ -137,6 +159,8 @@ namespace CampScheduler
             ((Excel.Worksheet)exampleWorkbook.Worksheets[5]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
 
             exampleWorkbook.Close(false);
+
+            AddWorksheet(((Excel.Worksheet)Globals.ThisAddIn.Application.ActiveSheet).Name);
         }
 
         private void GenerateEmptyWeekButton_Click(object sender, RibbonControlEventArgs e)
@@ -163,6 +187,8 @@ namespace CampScheduler
             ((Excel.Worksheet)exampleWorkbook.Worksheets[4]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
 
             exampleWorkbook.Close(false);
+
+            AddWorksheet(((Excel.Worksheet)Globals.ThisAddIn.Application.ActiveSheet).Name);
         }
 
         private void GenerateEmptyBumpButton_Click(object sender, RibbonControlEventArgs e)
@@ -188,6 +214,8 @@ namespace CampScheduler
             ((Excel.Worksheet)exampleWorkbook.Worksheets[6]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
 
             exampleWorkbook.Close(false);
+
+            AddWorksheet(((Excel.Worksheet)Globals.ThisAddIn.Application.ActiveSheet).Name);
         }
 
         private void GenerateExampleBumpButton_Click(object sender, RibbonControlEventArgs e)
@@ -213,9 +241,10 @@ namespace CampScheduler
             ((Excel.Worksheet)exampleWorkbook.Worksheets[7]).Copy(Type.Missing, currentWorkbook.Worksheets[currentWorkbook.Worksheets.Count]);
 
             exampleWorkbook.Close(false);
+
+            AddWorksheet(((Excel.Worksheet)Globals.ThisAddIn.Application.ActiveSheet).Name);
         }
 
-        
 
         private string[] GetWorksheetsNames()
         {
@@ -225,6 +254,80 @@ namespace CampScheduler
                 workSheetNames[i-1] = Globals.ThisAddIn.Application.ActiveWorkbook.Worksheets[i].Name;
             }
             return workSheetNames;
+        }
+
+        private void AddWorksheet(string sheetName)
+        {
+            RibbonDropDownItem newItem = Globals.Factory.GetRibbonFactory().CreateRibbonDropDownItem();
+            newItem.Label = sheetName;
+            sheetNameToIndex.Add(sheetName, TallyInputBox.Items.Count);
+            TallyInputBox.Items.Add(newItem);
+        }
+
+        private void Application_WorkbookNewSheet(Excel.Workbook Wb, object Sh)
+        {
+            if (UserIntendedWorkbook != null && UserIntendedWorkbook.Name != Wb.Name) return;
+
+            AddWorksheet(((Excel.Worksheet)Sh).Name);
+        }
+
+        private void Application_SheetBeforeDelete(object Sh)
+        {
+            for (int i = 1; i < TallyInputBox.Items.Count; i++)
+            {
+                if(TallyInputBox.Items[i].Label == ((Excel.Worksheet)Sh).Name) 
+                {
+                    sheetNameToIndex.Remove(TallyInputBox.Items[i].Label);
+                    TallyInputBox.Items.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+
+        private void UpdateLastListSheetName(string sheetName)
+        {
+            sheetNameToIndex.Remove(TallyInputBox.Items.Last().Label);
+            sheetNameToIndex.Add(sheetName, TallyInputBox.Items.Count() - 1);
+            TallyInputBox.Items.Last().Label = sheetName;
+        }
+
+        private void UpdateLastListSheetNames(string[] sheetNames)
+        {
+            int sheetNameI = 0;
+            for (int i = TallyInputBox.Items.Count - sheetNames.Length; i < TallyInputBox.Items.Count; i++)
+            {
+                sheetNameToIndex.Remove(TallyInputBox.Items[i].Label);
+                sheetNameToIndex.Add(sheetNames[sheetNameI], i);
+                TallyInputBox.Items[i].Label = sheetNames[sheetNameI];
+                sheetNameI++;
+            }
+        }
+
+        private void RefreshTallyInput()
+        {
+            var sheetNames = GetWorksheetsNames();
+
+            for(int i = 1; i < TallyInputBox.Items.Count; i++)
+            {
+                if (!sheetNames.Contains(TallyInputBox.Items[i].Label))
+                {
+                    sheetNameToIndex.Remove(TallyInputBox.Items[i].Label);
+                    TallyInputBox.Items.RemoveAt(i);
+                }
+            }
+
+            foreach (var sheetName in sheetNames)
+            {
+                if(!sheetNameToIndex.ContainsKey(sheetName))
+                {
+                    AddWorksheet(sheetName);
+                }
+            }
+        }
+
+        private void RefreshTallyInputButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            RefreshTallyInput();
         }
 
         private void GenerateDayOutputButton_Click(object sender, RibbonControlEventArgs e)
@@ -238,6 +341,8 @@ namespace CampScheduler
                     return;
                 }
             }
+
+            UserIntendedWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
 
             var inputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
 
@@ -282,20 +387,26 @@ namespace CampScheduler
             var takenNames = GetWorksheetsNames();
 
             var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            schedule.OutputSchedule(outputSheet, takenNames);
+            var outputName = schedule.OutputSchedule(outputSheet, takenNames);
+
+            UpdateLastListSheetName(outputName);
 
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
 
             if (DoTallyButton.Checked)
             {
                 var tallySheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-                schedule.OutputTally(tallySheet, takenNames);
+                var TallyName = schedule.OutputTally(tallySheet, takenNames);
+
+                UpdateLastListSheetName(TallyName);
 
                 System.Runtime.InteropServices.Marshal.FinalReleaseComObject(tallySheet);
             }
 
             if (GroupSchedulesBox.Checked)
             {
+                Excel.Workbook GroupsWorkbook = (Excel.Workbook)Globals.ThisAddIn.Application.Workbooks.Add();
+
                 var groupSheets = new Excel.Worksheet[schedule.NumOfGroups];
 
                 for (int i = 0; i < groupSheets.Length; i++)
@@ -305,11 +416,17 @@ namespace CampScheduler
 
                 schedule.OutputGroups(groupSheets, takenNames);
 
-                for(int i = 0; i < groupSheets.Length; i++)
+                ((Excel.Worksheet)Globals.ThisAddIn.Application.ActiveWorkbook.Sheets[groupSheets.Length + 1]).Delete();
+
+                for (int i = 0; i < groupSheets.Length; i++)
                 {
                     System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupSheets[i]);
                 }
+
+                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(GroupsWorkbook);
             }
+
+            UserIntendedWorkbook = null;
         }
 
         private void GenerateWeekOutputButton_Click(object sender, RibbonControlEventArgs e)
@@ -323,6 +440,8 @@ namespace CampScheduler
                     return;
                 }
             }
+
+            UserIntendedWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
 
             var inputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
 
@@ -378,7 +497,9 @@ namespace CampScheduler
 
             var takenNames = GetWorksheetsNames();
 
-            schedule.OutputSchedule(outputSheets, takenNames);
+            var outputSheetNames = schedule.OutputSchedule(outputSheets, takenNames);
+
+            UpdateLastListSheetNames(outputSheetNames);
 
             foreach(var outputSheet in outputSheets)
             {
@@ -390,7 +511,9 @@ namespace CampScheduler
             if (DoTallyButton.Checked)
             {
                 var tallySheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-                schedule.OutputTally(tallySheet, takenNames);
+                var tallyName = schedule.OutputTally(tallySheet, takenNames);
+
+                UpdateLastListSheetName(tallyName);
 
                 System.Runtime.InteropServices.Marshal.FinalReleaseComObject(tallySheet);
             }
@@ -407,7 +530,7 @@ namespace CampScheduler
                     groupSheets[i] = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
                 }
 
-                schedule.OutputGroups(groupSheets, takenNames);
+                var groupSheetNames = schedule.OutputGroups(groupSheets, takenNames);
 
                 ((Excel.Worksheet)Globals.ThisAddIn.Application.ActiveWorkbook.Sheets[groupSheets.Length+1]).Delete();
 
@@ -418,6 +541,8 @@ namespace CampScheduler
 
                 System.Runtime.InteropServices.Marshal.FinalReleaseComObject(GroupsWorkbook);
             }
+
+            UserIntendedWorkbook = null;
         }
 
         private void GenerateBumpButton_Click(object sender, RibbonControlEventArgs e)
@@ -431,6 +556,8 @@ namespace CampScheduler
                     return;
                 }
             }
+
+            UserIntendedWorkbook = Globals.ThisAddIn.Application.ActiveWorkbook;
 
             var inputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
 
@@ -471,9 +598,13 @@ namespace CampScheduler
             var takenNames = GetWorksheetsNames();
 
             var outputSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            bump.OutputBump(outputSheet, takenNames);
+            string bumpName = bump.OutputBump(outputSheet, takenNames);
+
+            UpdateLastListSheetName(bumpName);
 
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
+
+            UserIntendedWorkbook = null;
         }
 
         private void FormatOutputButton_Click(object sender, RibbonControlEventArgs e)
@@ -589,7 +720,6 @@ namespace CampScheduler
             catch (Exception ex) { }
         }
 
-
         private void UnFormatOutputButton_Click(object sender, RibbonControlEventArgs e)
         {
             CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
@@ -657,5 +787,6 @@ namespace CampScheduler
         {
 
         }
+
     }
 }

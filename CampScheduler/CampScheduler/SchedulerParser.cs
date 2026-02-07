@@ -314,7 +314,6 @@ namespace CampScheduler
         public static Bump GenerateBump(Excel.Range blockData, Excel.Range activityData, Excel.Range counselorData)
         {
             List<BumpActivity> activities = new List<BumpActivity>();
-            List<Counselor> counselors = new List<Counselor>();
 
             List<string> times = new List<string>();
             Dictionary<byte, byte> lunchNumToTimeIndex = new Dictionary<byte, byte>();
@@ -363,6 +362,8 @@ namespace CampScheduler
                 throw new Exception("Failed to parse activities table; check for empty or invalid inputs");
             }
 
+            var bump = new Bump(dayInfo, activities);
+
             try
             {
                 
@@ -377,7 +378,7 @@ namespace CampScheduler
                     var lunch = counselorData.Cells.Value2[i + 1, 4];
                     bool handicap = YNParse(counselorData.Cells.Value2[i + 1, 5]);
 
-                    counselors.Add(new Counselor(i, name, paid, changingRoom, (byte)lunch, handicap));
+                    bump.AddCounselor(new Counselor(i, name, paid, changingRoom, (byte)lunch, handicap));
                 }
             }
             catch (Exception)
@@ -385,7 +386,7 @@ namespace CampScheduler
                 throw new Exception("Failed to parse counselors table; check for empty or invalid inputs");
             }
 
-            var bump = new Bump(dayInfo, activities, counselors);
+            
 
             bump.GenerateBump();
 

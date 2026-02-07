@@ -27,14 +27,24 @@ namespace CampScheduler
         internal List<BumpActivity> Activities;
 
         internal List<Counselor> Counselors;
+
+        internal int PaidCounselorCount;
         
-        internal Bump(DayInfo dayInfo, List<BumpActivity> activities, List<Counselor> counselors)
+        internal Bump(DayInfo dayInfo, List<BumpActivity> activities)
         {
             DayInfo = dayInfo;
             Activities = activities;
-            Counselors = counselors;
+
+            Counselors = new List<Counselor>();
+            PaidCounselorCount = 0;
 
             BumpData = new List<byte>[dayInfo.Times.Length, activities.Count];
+        }
+
+        public void AddCounselor(Counselor newCounselor)
+        {
+            Counselors.Add(newCounselor);
+            if (newCounselor.Paid) PaidCounselorCount++;
         }
 
         private bool IsBookedInBlock(byte CounselorId, int TimeIndex)
@@ -104,6 +114,9 @@ namespace CampScheduler
                 short paidCount;
                 short unpaidCount;
 
+                //float globalPaidFrac = (float)PaidCounselorCount / Counselors.Count;
+                //float currPaidFrac = 0f;
+
                 //Priority (changing room) Scheduling
                 bool needM, needF = false;
                 for(int ActInd = 0; ActInd < Activities.Count; ActInd++)
@@ -146,8 +159,12 @@ namespace CampScheduler
                         ScheduleBumpReturnCode CanSchedule;
                         while (true)
                         {
-                            CanSchedule = CanScheduleCounselor(BookableCounInds[currentBookableCounIndInd], blockIndex, ActInd, paidCount, unpaidCount, needM, needF);
-                            if (CanSchedule != ScheduleBumpReturnCode.Success) //|| DayInfo.LunchNumToTimeIndex[currentCoun.LunchNum] == blockIndex)
+                            CanSchedule = CanScheduleCounselor(BookableCounInds[currentBookableCounIndInd], blockIndex, ActInd, paidCount, 0, needM, needF);
+                            //ensure that paid/unpaid staff are taken evenly
+                            //if (currPaidFrac < globalPaidFrac) CanSchedule = CanScheduleCounselor(BookableCounInds[currentBookableCounIndInd], blockIndex, ActInd, paidCount, 0, needM, needF);
+                            //else CanSchedule = CanScheduleCounselor(BookableCounInds[currentBookableCounIndInd], blockIndex, ActInd, 0, unpaidCount, needM, needF);
+
+                            if (CanSchedule != ScheduleBumpReturnCode.Success) //|| DayInfo.LunchNumToTimeIndex[currentCoun.LunchNum] == blockIndex) ADD WORKING LUNCH FEATURE (check commit log for more info)
                             {
                                 var temp = BookableCounInds[currentBookableCounIndInd];
                                 BookableCounInds.RemoveAt(currentBookableCounIndInd);
@@ -169,13 +186,19 @@ namespace CampScheduler
                         if (currentCoun.ChangingRoom == ChangingRoomCode.M) needM = false;
                         else needF = false;
 
-                        if (currentCoun.Paid) paidCount--;
-                        else unpaidCount--;
+                        if (currentCoun.Paid)
+                        {
+                            paidCount--;
+                            //currPaidFrac = ((float)currPaidFrac * currentBookableCounIndInd + 1.0f) / (currentBookableCounIndInd + 1.0f);
+                        }
+                        else
+                        {
+                            unpaidCount--;
+                            //currPaidFrac = ((float)currPaidFrac * currentBookableCounIndInd) / (currentBookableCounIndInd + 1.0f);
+                        }
 
                         currentBookableCounIndInd++;
                     }
-
-
                 }
 
                 //Regular Scheduling
@@ -262,7 +285,7 @@ namespace CampScheduler
             }
         }
 
-        public void OutputBump(Excel.Worksheet outputSheet, string[] takenSheetNames)
+        public string OutputBump(Excel.Worksheet outputSheet, string[] takenSheetNames)
         {
             var outputRange = outputSheet.Range["A1", "Z100"];
 
@@ -330,6 +353,8 @@ namespace CampScheduler
 
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputRange);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(outputSheet);
+
+            return currentName;
         }
     }
 }

@@ -1,4 +1,7 @@
-﻿namespace CampScheduler
+﻿using Microsoft.Office.Tools.Ribbon;
+using System;
+
+namespace CampScheduler
 {
     partial class SchedulerRibbon : Microsoft.Office.Tools.Ribbon.RibbonBase
     {
@@ -34,6 +37,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl1 = this.Factory.CreateRibbonDropDownItem();
             this.tab1 = this.Factory.CreateRibbonTab();
             this.group1 = this.Factory.CreateRibbonGroup();
             this.GenerateInputButton = this.Factory.CreateRibbonDropDown();
@@ -44,17 +48,19 @@
             this.GenerateExampleWeekButton = this.Factory.CreateRibbonButton();
             this.GenerateEmptyBumpButton = this.Factory.CreateRibbonButton();
             this.GenerateExampleBumpButton = this.Factory.CreateRibbonButton();
+            this.TallyInputBox = this.Factory.CreateRibbonComboBox();
+            this.RefreshTallyInputButton = this.Factory.CreateRibbonButton();
             this.group2 = this.Factory.CreateRibbonGroup();
             this.GenerateDayOutputButton = this.Factory.CreateRibbonButton();
             this.GenerateWeekOutputButton = this.Factory.CreateRibbonButton();
             this.GenerateBumpButton = this.Factory.CreateRibbonButton();
             this.FormatOutputDropDown = this.Factory.CreateRibbonDropDown();
             this.FormatOutputButton = this.Factory.CreateRibbonButton();
+            this.FormatBumpButton = this.Factory.CreateRibbonButton();
             this.UnFormatOutputButton = this.Factory.CreateRibbonButton();
             this.DoTallyButton = this.Factory.CreateRibbonCheckBox();
             this.GroupSchedulesBox = this.Factory.CreateRibbonCheckBox();
             this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
-            this.FormatBumpButton = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -71,6 +77,8 @@
             // group1
             // 
             this.group1.Items.Add(this.GenerateInputButton);
+            this.group1.Items.Add(this.TallyInputBox);
+            this.group1.Items.Add(this.RefreshTallyInputButton);
             this.group1.Label = "Input";
             this.group1.Name = "group1";
             // 
@@ -122,6 +130,19 @@
             this.GenerateExampleBumpButton.Label = "Example Bump";
             this.GenerateExampleBumpButton.Name = "GenerateExampleBumpButton";
             // 
+            // TallyInputBox
+            // 
+            this.TallyInputBox.Items.Add(ribbonDropDownItemImpl1);
+            this.TallyInputBox.Label = "Tally Input Name";
+            this.TallyInputBox.Name = "TallyInputBox";
+            this.TallyInputBox.Text = null;
+            // 
+            // RefreshTallyInputButton
+            // 
+            this.RefreshTallyInputButton.Label = "Refresh Tally Inputs";
+            this.RefreshTallyInputButton.Name = "RefreshTallyInputButton";
+            this.RefreshTallyInputButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.RefreshTallyInputButton_Click);
+            // 
             // group2
             // 
             this.group2.Items.Add(this.GenerateDayOutputButton);
@@ -165,6 +186,11 @@
             this.FormatOutputButton.Label = "Format Schedule";
             this.FormatOutputButton.Name = "FormatOutputButton";
             // 
+            // FormatBumpButton
+            // 
+            this.FormatBumpButton.Label = "Format Bump";
+            this.FormatBumpButton.Name = "FormatBumpButton";
+            // 
             // UnFormatOutputButton
             // 
             this.UnFormatOutputButton.Label = "Undo Format";
@@ -173,7 +199,7 @@
             // DoTallyButton
             // 
             this.DoTallyButton.Checked = true;
-            this.DoTallyButton.Label = "Schedule With Tally";
+            this.DoTallyButton.Label = "Output With Tally";
             this.DoTallyButton.Name = "DoTallyButton";
             this.DoTallyButton.Click += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.DoTallyButton_Click);
             // 
@@ -186,11 +212,6 @@
             // OpenInputFileDialog
             // 
             this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
-            // 
-            // FormatBumpButton
-            // 
-            this.FormatBumpButton.Label = "Format Bump";
-            this.FormatBumpButton.Name = "FormatBumpButton";
             // 
             // SchedulerRibbon
             // 
@@ -231,6 +252,8 @@
         private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateExampleBumpButton;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton GenerateBumpButton;
         private Microsoft.Office.Tools.Ribbon.RibbonButton FormatBumpButton;
+        internal Microsoft.Office.Tools.Ribbon.RibbonComboBox TallyInputBox;
+        internal Microsoft.Office.Tools.Ribbon.RibbonButton RefreshTallyInputButton;
     }
 
     partial class ThisRibbonCollection
