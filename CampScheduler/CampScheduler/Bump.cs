@@ -266,8 +266,8 @@ namespace CampScheduler
         {
             var outputRange = outputSheet.Range["A1", "Z100"];
 
-            outputRange.Range["A1", (char)('A' + DayInfo.Times.Length) + "1"].Merge();
-            outputRange.Cells[1, 1].Value2 = DayInfo.DayName;
+            outputRange.Range["B1", (char)('B' + DayInfo.Times.Length) + "1"].Merge();
+            outputRange.Cells[1, 2].Value2 = DayInfo.DayName;
 
             string baseName = $"{DayInfo.DayName} Bump Output";
             string currentName = baseName;

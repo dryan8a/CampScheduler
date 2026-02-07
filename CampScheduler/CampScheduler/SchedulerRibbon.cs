@@ -27,6 +27,7 @@ namespace CampScheduler
             
 
             FormatOutputButton.Click += FormatOutputButton_Click;
+            FormatBumpButton.Click += FormatBumpButton_Click;
             UnFormatOutputButton.Click += UnFormatOutputButton_Click;
         }
 
@@ -523,6 +524,72 @@ namespace CampScheduler
             catch (Exception ex) { }
         }
 
+        private void FormatBumpButton_Click(object sender, RibbonControlEventArgs e)
+        {
+            CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
+
+            if (oNewMenu != null)
+            {
+                if (!oNewMenu.Enabled)
+                {
+                    return;
+                }
+            }
+
+            try
+            {
+                var outputSheet = Globals.ThisAddIn.GetActiveWorkSheet();
+
+                outputSheet.Range["A1"].ColumnWidth = 9;
+                outputSheet.Range["A1"].RowHeight = 30;
+
+                int columnsWidth = -1;
+                while (outputSheet.Range[(char)('B' + ++columnsWidth) + "3"].Value2 != null)
+                {
+                    outputSheet.Range[(char)('B' + columnsWidth) + "3"].ColumnWidth = 21.13;
+                }
+
+                int rows = 2;
+                while (outputSheet.Range["B" + rows].Value2 != null)
+                {
+                    outputSheet.Range["B" + rows].Font.Underline = true;
+                    outputSheet.Range["B" + rows].RowHeight = 30;
+
+                    while (outputSheet.Range["B" + ++rows].Value2 != null)
+                    {
+                        outputSheet.Range["B" + rows, "B" + (rows + 3)].RowHeight = 30;
+
+                        var headerRange = outputSheet.Range["B" + rows, ((char)('B' + columnsWidth - 1)).ToString() + rows];
+                        headerRange.Interior.Color = Excel.XlRgbColor.rgbLightGrey;
+                        headerRange.Font.Bold = true;
+
+                        rows += 2;
+                        outputSheet.Range["B" + rows, ((char)('B' + columnsWidth - 1)).ToString() + rows].Font.Italic = true;
+                    }
+                    rows++;
+                }
+
+                var outputRange = outputSheet.Range["B2", ((char)('B' + columnsWidth)).ToString() + (rows - 1)];
+
+                outputRange.Cells.Font.Name = "Aptos Narrow";
+   
+                outputSheet.PageSetup.Orientation = XlPageOrientation.xlLandscape;
+                outputSheet.PageSetup.TopMargin = 54;
+                outputSheet.PageSetup.BottomMargin = 54;
+                outputSheet.PageSetup.RightMargin = 18;
+                outputSheet.PageSetup.LeftMargin = 18;
+                outputSheet.PageSetup.HeaderMargin = 21.6;
+                outputSheet.PageSetup.FooterMargin = 21.6;
+                outputSheet.PageSetup.Zoom = false;
+                outputSheet.PageSetup.FitToPagesTall = false;
+                outputSheet.PageSetup.FitToPagesWide = 1;
+                //outputSheet.Columns.AutoFit();
+
+            }
+            catch (Exception ex) { }
+        }
+
+
         private void UnFormatOutputButton_Click(object sender, RibbonControlEventArgs e)
         {
             CommandBarControl oNewMenu = Globals.ThisAddIn.Application.CommandBars["Worksheet Menu Bar"].FindControl(1, 18, Type.Missing, Type.Missing, true);
@@ -556,9 +623,23 @@ namespace CampScheduler
                 outputRange.Cells.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
 
                 outputRange.Cells.Font.Name = "Aptos Narrow";
+                outputRange.Font.Bold = false;
+                outputRange.Font.Italic = false;
+                outputRange.Font.Underline = false;
+
 
                 var firstColRange = outputRange.Range["A1", "A" + (rows - 1)];
                 firstColRange.Borders[XlBordersIndex.xlEdgeRight].LineStyle = Excel.XlLineStyle.xlLineStyleNone;
+
+                outputSheet.PageSetup.Orientation = XlPageOrientation.xlPortrait;
+                outputSheet.PageSetup.TopMargin = 54;
+                outputSheet.PageSetup.BottomMargin = 54;
+                outputSheet.PageSetup.RightMargin = 50.4;
+                outputSheet.PageSetup.LeftMargin = 50.4;
+                outputSheet.PageSetup.HeaderMargin = 21.6;
+                outputSheet.PageSetup.FooterMargin = 21.6;
+                outputSheet.PageSetup.FitToPagesTall = 1;
+                outputSheet.PageSetup.FitToPagesWide = 1;
             }
             catch (Exception ex) { }
         }
@@ -568,6 +649,11 @@ namespace CampScheduler
         }
 
         private void GroupSchedulesBox_Click(object sender, RibbonControlEventArgs e)
+        {
+
+        }
+
+        private void FormatOutputDropDown_SelectionChanged(object sender, RibbonControlEventArgs e)
         {
 
         }

@@ -54,6 +54,7 @@
             this.DoTallyButton = this.Factory.CreateRibbonCheckBox();
             this.GroupSchedulesBox = this.Factory.CreateRibbonCheckBox();
             this.OpenInputFileDialog = new System.Windows.Forms.OpenFileDialog();
+            this.FormatBumpButton = this.Factory.CreateRibbonButton();
             this.tab1.SuspendLayout();
             this.group1.SuspendLayout();
             this.group2.SuspendLayout();
@@ -153,13 +154,15 @@
             // FormatOutputDropDown
             // 
             this.FormatOutputDropDown.Buttons.Add(this.FormatOutputButton);
+            this.FormatOutputDropDown.Buttons.Add(this.FormatBumpButton);
             this.FormatOutputDropDown.Buttons.Add(this.UnFormatOutputButton);
             this.FormatOutputDropDown.Label = "Format Options";
             this.FormatOutputDropDown.Name = "FormatOutputDropDown";
+            this.FormatOutputDropDown.SelectionChanged += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.FormatOutputDropDown_SelectionChanged);
             // 
             // FormatOutputButton
             // 
-            this.FormatOutputButton.Label = "Format";
+            this.FormatOutputButton.Label = "Format Schedule";
             this.FormatOutputButton.Name = "FormatOutputButton";
             // 
             // UnFormatOutputButton
@@ -183,6 +186,11 @@
             // OpenInputFileDialog
             // 
             this.OpenInputFileDialog.FileName = "Scheduler_Parameter_File";
+            // 
+            // FormatBumpButton
+            // 
+            this.FormatBumpButton.Label = "Format Bump";
+            this.FormatBumpButton.Name = "FormatBumpButton";
             // 
             // SchedulerRibbon
             // 
@@ -222,6 +230,7 @@
         private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateEmptyBumpButton;
         private Microsoft.Office.Tools.Ribbon.RibbonButton GenerateExampleBumpButton;
         internal Microsoft.Office.Tools.Ribbon.RibbonButton GenerateBumpButton;
+        private Microsoft.Office.Tools.Ribbon.RibbonButton FormatBumpButton;
     }
 
     partial class ThisRibbonCollection
