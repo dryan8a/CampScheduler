@@ -16,6 +16,10 @@ namespace CampScheduler
 
         internal Dictionary<Grade, byte> GradeToUnit { get; }
 
+        internal Dictionary<string,byte> GroupNameToID { get; }
+
+        internal Dictionary<string, byte> ActivityNameToID { get; }
+
         internal List<byte> GroupIDsWithRuleWActs { get; }
 
         internal int WActMaxNumofGroups;
@@ -31,6 +35,10 @@ namespace CampScheduler
             Groups = groups;
 
             GradeToUnit = gradeToUnit;
+
+            GroupNameToID = new Dictionary<string, byte>();
+
+            ActivityNameToID = new Dictionary<string, byte>();
 
             GroupIDsWithRuleWActs = new List<byte>();
 
@@ -64,5 +72,14 @@ namespace CampScheduler
         }
 
         public abstract void GenerateSchedule();
+
+        /// <summary>
+        /// Add previous Tally Data to Schedule for generation. Note: please only use after finishing adding activities
+        /// </summary>
+        /// <param name="GroupName"></param>
+        /// <param name="ActivityName"></param>
+        /// <param name="Data"></param>
+        /// <returns>Returns false when an invalid group or activity name is featured in tally</returns>
+        public abstract bool InitTallyData(string GroupName, string ActivityName, byte Data);
     }
 }

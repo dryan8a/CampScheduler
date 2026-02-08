@@ -32,6 +32,11 @@ namespace CampScheduler
         {
             ScheduleData = new string[dayInfo.Times.Length, groups.Length];
 
+            for (byte i = 0; i < groups.Length; i++)
+            {
+                GroupNameToID.Add(groups[i].Name, i);
+            }
+
             Activities = new List<DayActivity>();
             WaterActivities = new List<DayActivity>();
 
@@ -44,7 +49,8 @@ namespace CampScheduler
         public void AddActivity(string name, bool waterActivity, bool overflow, byte[] numOfGroups, bool open, Grade[] gradeOnly, Grade[] gradeStrike, bool specialist)
         {
             DayActivity activity = new DayActivity((byte)Activities.Count, name, waterActivity, overflow, numOfGroups, open, gradeOnly, gradeStrike, specialist);
-            Activities.Add(activity); 
+            Activities.Add(activity);
+            ActivityNameToID.Add(name, activity.Id);
             if (waterActivity)
             {
                 WaterActivities.Add(activity);
@@ -71,14 +77,25 @@ namespace CampScheduler
             }
             else Rules.Add(new Rule(groupIDs, actIDs, timeIDs));
         }
-        
+
+        public override bool InitTallyData(string GroupName, string ActivityName, byte Data)
+        {
+            if(!GroupNameToID.ContainsKey(GroupName) || !ActivityNameToID.ContainsKey(ActivityName)) return false;
+
+            if (GroupByActivityCount == null) GroupByActivityCount = new byte[Groups.Length, Activities.Count];
+
+            GroupByActivityCount[GroupNameToID[GroupName], ActivityNameToID[ActivityName]] = Data;
+
+            return true;
+        }
+
         public byte[] ParseActivities(string activityNamesInput)
         {
             var activityStrings = activityNamesInput.Split(',');
             byte[] activityIds = new byte[activityStrings.Length];
             for(int i = 0; i <  activityStrings.Length; i++)
             {
-                activityIds[i] = Activities.First(act => act.Name.Equals(activityStrings[i].Trim())).Id;
+                activityIds[i] = ActivityNameToID[activityStrings[i].Trim()];
             }
             return activityIds;
         }
@@ -489,7 +506,7 @@ namespace CampScheduler
         public override void GenerateSchedule()
         {
             //Initialize Activity Counter
-            GroupByActivityCount = new byte[Groups.Length, Activities.Count];
+            if(GroupByActivityCount == null) GroupByActivityCount = new byte[Groups.Length, Activities.Count];
 
             //Special Activity Scheduling
             for (byte block = 0; block < DayInfo.Times.Length; block++)
@@ -703,6 +720,5 @@ namespace CampScheduler
 
             return names;
         }
-
     }
 }

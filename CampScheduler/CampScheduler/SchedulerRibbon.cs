@@ -39,8 +39,10 @@ namespace CampScheduler
             Globals.ThisAddIn.Application.WorkbookNewSheet += Application_WorkbookNewSheet;
             Globals.ThisAddIn.Application.SheetBeforeDelete += Application_SheetBeforeDelete;
 
-            sheetNameToIndex = new Dictionary<string, int>();
-            sheetNameToIndex.Add("", 0);
+            sheetNameToIndex = new Dictionary<string, int>
+            {
+                { "", 0 }
+            };
 
             UserIntendedWorkbook = null;
 
@@ -328,6 +330,24 @@ namespace CampScheduler
         private void RefreshTallyInputButton_Click(object sender, RibbonControlEventArgs e)
         {
             RefreshTallyInput();
+            TallyInputBox.Text = "";
+        }
+
+        private Excel.Range GetTallyInput()
+        {
+            if (TallyInputBox.Text == "") return ((Excel.Worksheet)Globals.ThisAddIn.Application.ActiveSheet).Range["A1"];
+
+            var tallySheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Cast<Excel.Worksheet>().SingleOrDefault(w => w.Name == TallyInputBox.Text);
+
+            if(tallySheet == null) return ((Excel.Worksheet)Globals.ThisAddIn.Application.ActiveSheet).Range["A1"]; ;
+
+            //int tallyBottom = 1;
+            //while (tallySheet.Range["B" + ++tallyBottom].Value2 != null) ;
+
+            //int tallyRight = tallySheet.UsedRange.Columns.Count;
+            //while (tallySheet.Range[(char)('B' + ++tallyRight) + "1"].Value2 != null);
+
+            return tallySheet.UsedRange;//tallySheet.Range["A1", (char)('B' + tallyRight) + tallyBottom];
         }
 
         private void GenerateDayOutputButton_Click(object sender, RibbonControlEventArgs e)
@@ -362,11 +382,13 @@ namespace CampScheduler
             while (inputSheet.Range["Y" + ++rulesBottom].Value2 != null) ;
             var rulesData = inputSheet.Range["Y3", "AA" + (rulesBottom - 1)];
 
+            var tallyData = GetTallyInput();
+
             DaySchedule schedule;
-            //error handling commented out for testing purposes
+
             try
             {
-                schedule = SchedulerParser.GenerateDaySchedule(blockData, activityData, groupData, rulesData);
+                schedule = SchedulerParser.GenerateDaySchedule(blockData, activityData, groupData, rulesData, tallyData);
             }
             catch (Exception ex)
             {
@@ -461,15 +483,13 @@ namespace CampScheduler
             while (inputSheet.Range["Z" + ++rulesBottom].Value2 != null) ;
             var rulesData = inputSheet.Range["Z3", "AC" + (rulesBottom - 1)];
 
-            //var errorSheet = (Excel.Worksheet)Globals.ThisAddIn.Application.Worksheets.Add();
-            //errorSheet.Range["A1"].Value2 = "Week Generation Not Available. Launching soon.";
+            var tallyData = GetTallyInput();
 
             WeekSchedule schedule;
 
-            //error handling commented out for testing purposes
             try
             {
-                schedule = SchedulerParser.GenerateWeekSchedule(blockData, activityData, groupData, rulesData);
+                schedule = SchedulerParser.GenerateWeekSchedule(blockData, activityData, groupData, rulesData,tallyData);
             }
             catch (Exception ex)
             {

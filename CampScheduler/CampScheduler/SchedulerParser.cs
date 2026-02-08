@@ -73,7 +73,7 @@ namespace CampScheduler
 
         public static bool YNParse(string ynInput) => ynInput == "y";
 
-        public static DaySchedule GenerateDaySchedule(Excel.Range blockData, Excel.Range activityData, Excel.Range groupData, Excel.Range rulesData)
+        public static DaySchedule GenerateDaySchedule(Excel.Range blockData, Excel.Range activityData, Excel.Range groupData, Excel.Range rulesData, Excel.Range tallyData)
         {
             Group[] groups = new Group[groupData.Rows.Count];
             var GradeToUnit = new Dictionary<Grade, byte>();
@@ -169,6 +169,33 @@ namespace CampScheduler
                 throw new Exception("Failed to parse rules table; check for empty or invalid inputs");
             }
 
+            if(tallyData.Rows.Count > 1 && tallyData.Columns.Count > 1)
+            {
+                try
+                {
+                    string groupName;
+                    string activityName;
+                    byte data;
+                    for (byte i = 2; i < tallyData.Rows.Count; i++)
+                    {
+                        groupName = Convert.ToString(tallyData.Cells.Value2[i, 1]);
+                        if (groupName == null) continue;
+                        for (byte j = 2; j < tallyData.Columns.Count; j++)
+                        {
+                            activityName = Convert.ToString(tallyData.Cells.Value2[1, j]);
+                            if(activityName == null) continue;
+
+                            data = (byte)tallyData.Cells.Value2[i, j];
+
+                            if(!schedule.InitTallyData(groupName, activityName, data)) throw new Exception();
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    throw new Exception("Failed to parse tally sheet; check for empty or invalid inputs");
+                }
+            }
 
             schedule.GenerateSchedule();
 
@@ -179,11 +206,12 @@ namespace CampScheduler
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(rulesData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(tallyData);
 
             return schedule;
         }
 
-        public static WeekSchedule GenerateWeekSchedule(Excel.Range blockData, Excel.Range activityData, Excel.Range groupData, Excel.Range rulesData)
+        public static WeekSchedule GenerateWeekSchedule(Excel.Range blockData, Excel.Range activityData, Excel.Range groupData, Excel.Range rulesData, Excel.Range tallyData)
         {
             Group[] groups = new Group[groupData.Rows.Count];
             var GradeToUnit = new Dictionary<Grade, byte>();
@@ -297,6 +325,33 @@ namespace CampScheduler
                 throw new Exception("Failed to parse rules table; check for empty or invalid inputs");
             }
 
+            if (tallyData.Rows.Count > 1 && tallyData.Columns.Count > 1)
+            {
+                try
+                {
+                    string groupName;
+                    string activityName;
+                    byte data;
+                    for (byte i = 2; i < tallyData.Rows.Count; i++)
+                    {
+                        groupName = Convert.ToString(tallyData.Cells.Value2[i, 1]);
+                        if (groupName == null) continue;
+                        for (byte j = 2; j < tallyData.Columns.Count; j++)
+                        {
+                            activityName = Convert.ToString(tallyData.Cells.Value2[1, j]);
+                            if (activityName == null) continue;
+
+                            data = (byte)tallyData.Cells.Value2[i, j];
+
+                            if (!schedule.InitTallyData(groupName, activityName, data)) throw new Exception();
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    throw new Exception("Failed to parse tally sheet; check for empty or invalid inputs");
+                }
+            }
 
             schedule.GenerateSchedule();
 
@@ -307,6 +362,7 @@ namespace CampScheduler
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(activityData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(groupData);
             System.Runtime.InteropServices.Marshal.FinalReleaseComObject(rulesData);
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(tallyData);
 
             return schedule;
         }
